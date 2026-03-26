@@ -1,0 +1,32 @@
+{
+  "name": "react-app",
+  "version": "1.0.0",
+  "description": "Search app using React",
+  "main": "index.js",
+  "scripts": {
+    "start": "cross-env NODE_OPTIONS=--openssl-legacy-provider webpack --mode development",
+    "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider webpack --mode production",
+    "start:dev": "cross-env NODE_OPTIONS=--openssl-legacy-provider webpack-dev-server --open"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.5.4",
+    "@babel/preset-env": "^7.5.4",
+    "@babel/preset-react": "^7.0.0",
+    "babel-loader": "^8.0.6",
+    "css-loader": "^3.0.0",
+    "html-webpack-inline-source-plugin": "0.0.10",
+    "html-webpack-plugin": "^3.2.0",
+    "style-loader": "^0.23.1",
+    "webpack": "^4.20.2",
+    "webpack-cli": "^3.1.1",
+    "webpack-dev-server": "^3.7.2",
+    "cross-env": "^7.0.3"
+  },
+  "dependencies": {
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6"
+  }
+}

@@ -4,36 +4,17 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "buildExtension",
 			"type": "npm",
-			"script": "watch",
-			"problemMatcher": "$ts-webpack-watch",
-			"isBackground": true,
-			"presentation": {
-				"reveal": "never",
-				"group": "watchers"
-			},
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			}
+			"script": "compile",
+			"problemMatcher": [],
+			"dependsOn": ["buildReactApp"]
 		},
 		{
+			"label": "buildReactApp",
 			"type": "npm",
-			"script": "watch-tests",
-			"problemMatcher": "$tsc-watch",
-			"isBackground": true,
-			"presentation": {
-				"reveal": "never",
-				"group": "watchers"
-			},
-			"group": "build"
-		},
-		{
-			"label": "tasks: watch-tests",
-			"dependsOn": [
-				"npm: watch",
-				"npm: watch-tests"
-			],
+			"script": "build",
+			"path": "react-app/",
 			"problemMatcher": []
 		}
 	]
