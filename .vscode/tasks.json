@@ -14,7 +14,7 @@
 			"label": "buildReactApp",
 			"type": "npm",
 			"script": "build",
-			"path": "react-app/",
+			"path": "ui/",
 			"problemMatcher": []
 		}
 	]

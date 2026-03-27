@@ -1,6 +1,8 @@
 .vscode/**
 .vscode-test/**
-out/**
+# include built extension output (out/extension.js) in package; exclude tests instead
+# out/**
+ui/**
 node_modules/**
 src/**
 .gitignore

@@ -1,13 +1,25 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawn } from 'child_process';
 
 const startCommandName = 'extension.startExtension';
-const webViewPanelTitle = 'React extension';
+const webViewPanelTitle = 'TWS Report';
 const webViewPanelId = 'reactExtension';
 
-let webViewPanel : vscode.WebviewPanel;
-let outputChannel: vscode.OutputChannel;
+let webViewPanel: vscode.WebviewPanel | undefined;
+let outputChannel: vscode.OutputChannel | undefined;
+
+function isDebug(): boolean {
+  return true;
+  return String(process.env.DEBUG).toLowerCase() === 'true';
+}
+
+function debugLog(...lines: string[]) {
+  if (!outputChannel) return;
+  for (const l of lines) outputChannel.appendLine(l);
+  if (isDebug()) outputChannel.show(true);
+}
 
 function startCommandHandler(context: vscode.ExtensionContext): void {
 
@@ -22,7 +34,7 @@ function startCommandHandler(context: vscode.ExtensionContext): void {
     showOptions
   );
 
-  panel.webview.html = getHtmlForWebview();
+  panel.webview.html = getHtmlForWebview(panel.webview);
   panel.webview.onDidReceiveMessage(
     onPanelDidReceiveMessage,
     undefined,
@@ -38,123 +50,159 @@ function onPanelDispose(): void {
   // Clean up panel here
 }
 
-function onPanelDidReceiveMessage(message: any) {
+type WebviewMessage = { command: string } & Record<string, unknown>;
+
+function isWebviewMessage(obj: unknown): obj is WebviewMessage {
+  return typeof obj === 'object' && obj !== null && typeof (obj as Record<string, unknown>)['command'] === 'string';
+}
+
+function onPanelDidReceiveMessage(message: unknown) {
+  if (!isWebviewMessage(message)) return;
+
   switch (message.command) {
-    case 'showInformationMessage':
-      vscode.window.showInformationMessage(message.text);
+    case 'showInformationMessage': {
+      const text = (message as Record<string, unknown>)['text'];
+      if (typeof text === 'string') vscode.window.showInformationMessage(text);
       return;
+    }
 
     case 'getDirectoryInfo':
-      runDirCommand((result : string) => webViewPanel.webview.postMessage({ command: 'getDirectoryInfo', directoryInfo: result }));
+      runDirCommand((result: string) => safePostMessage({ command: 'getDirectoryInfo', directoryInfo: result }));
       return;
 
-    case 'formValues':
-      // Show a brief info message and write to the extension output
-      console.log('Form message from webview:', message);
-      const vals = message.values || {};
-      vscode.window.showInformationMessage(`Form submitted: ${vals.username || ''}`);
-      console.log('Form values received from webview:', vals);
-      if (outputChannel) {
-        outputChannel.appendLine('Form values received from webview:');
-        outputChannel.appendLine(JSON.stringify(vals, null, 2));
-        outputChannel.show(true);
+    case 'checkGitHistory':
+      // Run `git log` in workspace root (if available) and send result back
+      const cwd = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0]
+        ? vscode.workspace.workspaceFolders[0].uri.fsPath
+        : undefined;
+      runGitLog((result: string) => safePostMessage({ command: 'gitHistoryResult', result }), cwd);
+      return;
+
+    case 'formValues': {
+      const vals = (message as Record<string, unknown>)['values'];
+      vscode.window.showInformationMessage(`Form submitted`);
+      try {
+        debugLog('Form values received from webview:');
+        debugLog(JSON.stringify(vals, null, 2));
+      } catch {
+        debugLog(String(vals));
       }
 
-      vscode.commands.executeCommand('llm-checking', JSON.stringify(message.values));
+      // Trigger LLM handling (registered command)
+      try {
+        vscode.commands.executeCommand('llm-checking', JSON.stringify(vals));
+      } catch (e) {
+        debugLog('Failed to execute llm-checking: ' + String(e));
+      }
       return;
+    }
   }
 }
 
-function runDirCommand(callback : Function) {
-  var spawn = require('child_process').spawn;
-  var cp = spawn(process.env.comspec, ['/c', 'dir']);
-  
-  cp.stdout.on("data", function(data : any) {
-    const dataString = data.toString();
+function runDirCommand(callback: (out: string) => void) {
+  const isWindows = process.platform === 'win32';
+  const cmd = isWindows ? process.env.comspec || 'cmd.exe' : 'ls';
+  const args = isWindows ? ['/c', 'dir'] : ['-la'];
+  const cp = spawn(cmd, args, { windowsHide: true });
 
-    callback(dataString);
-  });
-  
-  cp.stderr.on("data", function(data : any) {
-    // No op
-  });
+  let out = '';
+  cp.stdout.on('data', (data: Buffer) => { out += String(data); });
+  cp.on('close', () => callback(out));
+  cp.on('error', () => callback(''));
+}
+
+function runGitLog(callback: (out: string) => void, cwd?: string) {
+  // Limit to last 100 commits for performance
+  const args = ['log', '--oneline', '-n', '100'];
+  const cp = spawn('git', args, { cwd, windowsHide: true });
+
+  let out = '';
+  cp.stdout.on('data', (data: Buffer) => { out += String(data); });
+  cp.stderr.on('data', (data: Buffer) => { out += String(data); });
+  cp.on('close', () => callback(out));
+  cp.on('error', (err) => callback(String(err)));
 }
 
 
-async function runLLMQuery(userQuery: string, response?: any, token?: any) {
+async function runLLMQuery(userQuery: string, response?: { markdown?: (text: string) => void }, token?: vscode.CancellationToken) {
   try {
-    if (outputChannel) {
-      outputChannel.appendLine('=== LLM checking (command) received query ===');
-      outputChannel.appendLine(String(userQuery));
-      outputChannel.show(true);
-    }
+    debugLog('=== LLM checking (command) received query ===', String(userQuery));
 
-    const allChatModels = await vscode.lm.selectChatModels();
-    if (!allChatModels || allChatModels.length === 0) {
-      if (outputChannel) outputChannel.appendLine('No chat models available');
-      return;
-    }
+    // const allChatModels = await vscode.lm.selectChatModels();
+    
+    // if (!allChatModels || allChatModels.length === 0) {
+    //   debugLog('No chat models available');
+    //   return;
+    // }
 
     const chatModel = await vscode.lm.selectChatModels({ family: 'gpt-4o' });
     if (!chatModel || chatModel.length === 0) {
-      if (outputChannel) outputChannel.appendLine('No gpt-4o family chat model available');
+      debugLog('No gpt-4o family chat model available');
       return;
     }
 
-    const query = `
-    You are an expert time-sheet writer. I will send a JSON array with today's items. Your job:
+    const getFormattedDate = () => {
+  const now = new Date();
 
-    1. Analyze each item and preserve its original meaning.
-    2. Always improve grammar, clarity, and descriptions. If an item lacks enough information, infer reasonable, professional details to make the description useful — do not change the item's intent. If you must infer, include the assumption in parentheses as part of the description.
-    3. Classify items into "meetings" and "tasks".
-    4. Group results by date and present them exactly as plain text with this structure:
-    I have attended the following meetings:
-    Day DD Mon YYYY:
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(now);
+};
 
-    <Improved meeting description>
-    I have completed the following tasks:
-    Day DD Mon YYYY:
+const today = getFormattedDate();
 
-    <Improved task description>
-    Rules:
+const PROMPT = `
+  You are an expert timesheet writer. I will provide a JSON array containing work log items. Your task is to transform this input into a clear, professional, and well-structured plain-text report.
 
-    Input is a JSON array; items may include an optional tsDate (ISO YYYY-MM-DD). If absent, assume today's date.
-    Preserve the original order of items within each date.
-    Use date format: "Wed 26 Mar 2026".
-    Improve short labels into full sentences (fix typos, expand abbreviations, normalize tense).
-    If no meetings or no tasks exist, include the section header with no bullets.
-    Output only the plain text report (no JSON, no extra commentary).
-    Input example:
-    [
-      {
-      "tsType": "task",
-      "tsText": "ticket 102",
-      "tsDate": "2026-03-26"
-      },
-      {
-      "tsType": "meeting",
-      "tsText": "1:1",
-      "tsDate": "2026-03-26"
-      }
-    ]
+  IMPORTANT:
+  - ALWAYS use this date: ${today}
+  - IGNORE any "tsDate" values from the input
 
-    Example output:
+  Instructions:
 
-    I have attended the following meetings:
-    Wed 26 Mar 2026:
+  1. Preserve intent
+  - Analyze each item and maintain its original meaning.
+  - Do not invent unrelated work. I am a software engineer.
 
-    1:1 meeting with my manager (assumed it was a one-on-one with manager)
-    I have completed the following tasks:
-    Wed 26 Mar 2026:
+  2. Improve descriptions
+  - Correct grammar, spelling, and clarity.
+  - Expand short or vague entries into complete, professional sentences.
+  - Only infer additional details when absolutely necessary.
+  - Do NOT include assumption explanations unless required.
+  - Keep descriptions concise and professional.
+  - Do NOT include unnecessary parentheses.
 
-    Worked on ticket 102 -> this is a bit short, so I will infer that it involved development work to resolve the ticket, and expand it to "Worked on ticket 102, performing development tasks to resolve the issue (inferred development work based on typical ticket resolution activities)"
-    
-    `
+  3. Categorization
+  - Classify each item into:
+    - Meetings
+    - Tasks
+
+  4. Formatting requirements
+  - Output must be plain text only (no JSON, no explanations).
+  - Use the following exact structure:
+
+  I have attended the following meetings:
+  ${today}:
+
+  <meeting descriptions>
+
+  I have completed the following tasks:
+  ${today}:
+
+  <task descriptions>
+
+  5. Additional rules
+  - Use consistent past tense.
+  - Expand abbreviations where appropriate (e.g., "1:1" → "one-on-one meeting").
+  - If a category has no items, include the header but leave it empty.
+  `;
 
     const messages = [
-      vscode.LanguageModelChatMessage.User(query),
-      vscode.LanguageModelChatMessage.User('data:'),
-      vscode.LanguageModelChatMessage.User(userQuery)
+      vscode.LanguageModelChatMessage.User(PROMPT),
+      vscode.LanguageModelChatMessage.User(`json array: ${userQuery}`),
     ];
 
     const chatRequest = await chatModel[0].sendRequest(messages, undefined, token);
@@ -168,29 +216,36 @@ async function runLLMQuery(userQuery: string, response?: any, token?: any) {
     if (response && typeof response.markdown === 'function') {
       response.markdown(fullText);
     }
-    if (outputChannel) outputChannel.appendLine(fullText);
+    debugLog(fullText);
     // Send the full LLM result back to the webview UI if available
     try {
       if (typeof webViewPanel !== 'undefined' && webViewPanel && webViewPanel.webview) {
         webViewPanel.webview.postMessage({ command: 'llmResult', result: fullText });
       }
     }
-    catch (e: any) {
-      if (outputChannel) outputChannel.appendLine('Error posting result to webview: ' + (e && e.message ? e.message : String(e)));
+    catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      debugLog('Error posting result to webview: ' + msg);
     }
   }
-  catch (e: any) {
-    if (outputChannel) outputChannel.appendLine('runLLMQuery error: ' + (e && e.message ? e.message : String(e)));
+  catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    debugLog('runLLMQuery error: ' + msg);
   }
 }
 
-function getHtmlForWebview(): string {
+function getHtmlForWebview(webview: vscode.Webview): string {
   try {
     const reactApplicationHtmlFilename = 'index.html';
     const htmlPath = path.join(__dirname, reactApplicationHtmlFilename);
     const html = fs.readFileSync(htmlPath).toString();
 
-    return html;
+    // Replace local script/style references with webview URIs
+    const scriptUri = webview.asWebviewUri(vscode.Uri.file(path.join(__dirname, 'main.js')));
+    // Replace occurrences of src="main.js" or src='main.js'
+    const updated = html.replace(/src=("|')main\.js\1/g, `src="${scriptUri.toString()}"`);
+
+    return updated;
   }
   catch (e) {
     return `Error getting HTML for web view: ${e}`;
@@ -202,7 +257,6 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(outputChannel);
 
   const startCommand = vscode.commands.registerCommand(startCommandName, () => startCommandHandler(context));
-
   context.subscriptions.push(startCommand);
 
   const llmCheckingCommand = vscode.commands.registerCommand('llm-checking', async (prompt: string) => {
@@ -210,8 +264,22 @@ export function activate(context: vscode.ExtensionContext) {
   });
   context.subscriptions.push(llmCheckingCommand);
 
+  // Register a chat participant to allow pipeline invocation from chat
+  if (vscode.chat && typeof vscode.chat.createChatParticipant === 'function') {
+    vscode.chat.createChatParticipant('llm-checking', async (request, ctx, response, token) => {
+      await runLLMQuery(request.prompt, response, token);
+    });
+  }
+}
 
-  vscode.chat.createChatParticipant('llm-checking', async (request, context, response, token) => {
-    await runLLMQuery(request.prompt, response, token);
-  });
+// Safe helper to post messages to the webview if available
+function safePostMessage(message: Record<string, unknown>) {
+  try {
+    if (webViewPanel && webViewPanel.webview) {
+      webViewPanel.webview.postMessage(message);
+    }
+  }
+  catch (e: unknown) {
+    debugLog('Error posting to webview: ' + (e instanceof Error ? e.message : String(e)));
+  }
 }
