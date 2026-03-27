@@ -2,7 +2,7 @@
   "name": "wts-report",
   "displayName": "wts-report",
   "description": "",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "engines": {
     "vscode": "^1.110.0"
   },

@@ -11,7 +11,6 @@ let webViewPanel: vscode.WebviewPanel | undefined;
 let outputChannel: vscode.OutputChannel | undefined;
 
 function isDebug(): boolean {
-  return true;
   return String(process.env.DEBUG).toLowerCase() === 'true';
 }
 
