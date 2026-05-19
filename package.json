@@ -13,7 +13,7 @@
   "activationEvents": [
     "onCommand:extension.startExtension"
   ],
-   "extensionDependencies": [
+  "extensionDependencies": [
     "github.copilot-chat"
   ],
   "contributes": {
@@ -38,16 +38,20 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/vscode": "^1.110.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "typescript-eslint": "^8.56.1",
+    "@types/vscode": "^1.110.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
     "eslint": "^9.39.3",
-    "typescript": "^5.9.3",
     "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1",
     "webpack": "^5.105.3",
-    "webpack-cli": "^6.0.1",
-    "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2"
+    "webpack-cli": "^6.0.1"
+  },
+  "overrides": {
+    "serialize-javascript": "^7.0.5",
+    "diff": "^9.0.0"
   }
 }
