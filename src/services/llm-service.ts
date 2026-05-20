@@ -30,8 +30,7 @@ export class LLMService implements ILLMService {
     try {
       // Format changes for display
       const formattedChanges = gitChanges
-        .map((change) => `[${change.branch}][${change.project}]
-${change.changes}`)
+        .map((change) => `[${change.branch}][${change.project}]${change.changes}`)
         .join('\n\n');
 
       const today = getFormattedDate();
