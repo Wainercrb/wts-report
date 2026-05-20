@@ -11,6 +11,14 @@ function Index() {
   const [result, setResult] = useState('');
   // Using CSS-only tabs (radio inputs + labels) — no JS tab buttons
   const [gitResult, setGitResult] = useState('');
+  const [gitUrls, setGitUrls] = useState(() => {
+    try {
+      const saved = localStorage.getItem('wts-report-git-urls');
+      return saved ? JSON.parse(saved) : [{ id: 'url-1', url: '' }];
+    } catch {
+      return [{ id: 'url-1', url: '' }];
+    }
+  });
 
   useEffect(() => {
     function handleMessage(event) {
@@ -28,14 +36,43 @@ function Index() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  function checkGitHistory() {
-    setGitResult('Checking git history...');
-    Interactor.showInformationMessage('Checking git history');
+  // Persist gitUrls to localStorage whenever it changes
+  useEffect(() => {
     try {
-      window.postMessage({ command: 'checkGitHistory' }, '*');
+      localStorage.setItem('wts-report-git-urls', JSON.stringify(gitUrls));
     } catch (e) {
-      // ignore
+      // ignore localStorage errors
     }
+  }, [gitUrls]);
+
+  function checkGitHistory() {
+    const validUrls = gitUrls.filter(item => item.url.trim() !== '');
+    
+    if (validUrls.length === 0) {
+      Interactor.showInformationMessage('Please enter at least one git URL');
+      return;
+    }
+    
+    setGitResult(`Processing ${validUrls.length} git URL${validUrls.length > 1 ? 's' : ''}...`);
+    Interactor.sendGitUrls(validUrls);
+    Interactor.showInformationMessage(`Checking ${validUrls.length} git URL${validUrls.length > 1 ? 's' : ''}`);
+  }
+
+  function addGitUrl() {
+    setGitUrls(prev => [
+      ...prev,
+      { id: `url-${Date.now()}`, url: '' }
+    ]);
+  }
+
+  function removeGitUrl(id) {
+    setGitUrls(prev => prev.filter(item => item.id !== id));
+  }
+
+  function updateGitUrl(id, url) {
+    setGitUrls(prev =>
+      prev.map(item => item.id === id ? { ...item, url } : item)
+    );
   }
 
   function nextStep() {
@@ -164,8 +201,46 @@ function Index() {
             </div>
 
             <div className="tab-panel tab-git">
-              <div className="flex items-center gap-2">
-                <button className="px-4 py-2 bg-indigo-600 text-white rounded" onClick={checkGitHistory}>Check Git History</button>
+              <div className="space-y-4">
+                <div>
+                  <label className="field-label">Git Project URLs</label>
+                  <div className="space-y-2">
+                    {gitUrls.map((item) => (
+                      <div key={item.id} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded"
+                          value={item.url}
+                          onChange={e => updateGitUrl(item.id, e.target.value)}
+                          placeholder="Enter git repository URL (e.g., https://github.com/user/repo.git)"
+                        />
+                        {gitUrls.length > 1 && (
+                          <button
+                            type="button"
+                            className="px-3 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+                            onClick={() => removeGitUrl(item.id)}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      onClick={addGitUrl}
+                    >
+                      Add More
+                    </button>
+                    <span className="text-sm text-gray-600">{gitUrls.length} URL field{gitUrls.length > 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700" onClick={checkGitHistory}>Check Git History</button>
+                </div>
               </div>
 
               <div className="mt-4">
