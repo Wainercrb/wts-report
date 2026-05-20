@@ -37,7 +37,6 @@ export function getDateRange(): { since: string; until: string } {
  */
 export function formatGitChanges(changes: GitChange[]): string {
   return changes
-    .map((change) => `[${change.branch}][${change.project}]
-${change.changes}`)
+    .map((change) => `[${change.branch}][${change.project}]${change.changes}`)
     .join('\n\n');
 }

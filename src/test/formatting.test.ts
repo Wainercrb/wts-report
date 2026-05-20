@@ -282,8 +282,8 @@ suite('utils/formatting.ts', () => {
 
       // Assert
       // Each should maintain its order
-      assert.ok(result1.includes('[main][project-a]\ncommit 1'));
-      assert.ok(result2.includes('[develop][project-b]\ncommit 2'));
+      assert.ok(result1.includes('[main][project-a]commit 1'));
+      assert.ok(result2.includes('[develop][project-b]commit 2'));
       assert.notStrictEqual(result1, result2);
     });
   });
