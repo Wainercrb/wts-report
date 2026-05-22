@@ -16,12 +16,12 @@ export function StoredItems({ items = [], onToggleCheck, onDelete }) {
   if (items.length === 0) {
     return null;
   }
-
+  
   return (
     <section className="w-full bg-white border border-gray-100 rounded-lg overflow-hidden mb-4">
       {/* Header with icon */}
       <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-        <ArchiveBoxIcon className="text-blue-600 h-5 w-5" />
+        <ArchiveBoxIcon className="text-blue-600 h-6 w-6" />
         <h3 className="text-sm font-semibold text-gray-900">Stored Items</h3>
       </div>
 
@@ -40,9 +40,9 @@ export function StoredItems({ items = [], onToggleCheck, onDelete }) {
               className="w-4 h-4 rounded accent-blue-600 cursor-pointer flex-shrink-0"
             />
             {item.tsType === 'meeting' ? (
-              <UsersIcon className="text-blue-600 h-5 w-5 flex-shrink-0" aria-label="meeting icon" />
+              <UsersIcon className="text-blue-600 h-6 w-6 flex-shrink-0" aria-label="meeting icon" />
             ) : (
-              <CheckIcon className="text-blue-600 h-5 w-5 flex-shrink-0" aria-label="task icon" />
+              <CheckIcon className="text-blue-600 h-6 w-6 flex-shrink-0" aria-label="task icon" />
             )}
             <label
               htmlFor={`stored-${item.id}`}

@@ -13,7 +13,7 @@ import { XMarkIcon } from '../../utils/IconMap';
 export function DeleteIcon({ className = '', ariaLabel = 'delete' }) {
   return (
     <XMarkIcon 
-      className={`h-5 w-5 text-red-500 hover:text-red-700 ${className}`} 
+      className={`h-6 w-6 text-red-500 hover:text-red-700 ${className}`} 
       aria-label={ariaLabel} 
     />
   );

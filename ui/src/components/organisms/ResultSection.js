@@ -20,7 +20,7 @@ export function ResultSection({ title = 'Result Summary', content = '' }) {
     <section className="w-full bg-white border border-gray-100 rounded-lg overflow-hidden mt-2 mb-8">
       {/* Header with icon */}
       <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-        <DocumentTextIcon className="text-gray-500 h-5 w-5" />
+        <DocumentTextIcon className="text-gray-500 h-6 w-6" />
         <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
       </div>
 
