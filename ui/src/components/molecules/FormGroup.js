@@ -27,7 +27,7 @@ export function FormGroup({
   type = 'text'
 }) {
   return (
-    <div className="mb-4">
+    <div className="mb-2">
       <Label htmlFor={label} required={required}>
         {label}
       </Label>

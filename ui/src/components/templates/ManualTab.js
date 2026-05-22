@@ -71,7 +71,7 @@ export function ManualTab({
     <>
       <section className="w-full bg-white border border-gray-100 rounded-lg p-6 mb-4">
         {/* 1. Sub-tabs: Meeting/Tasks segmented control */}
-        <div className="mb-6">
+        <div className="mb-3">
           <div className="bg-gray-100 p-0.5 rounded-lg flex relative">
             <button
               onClick={() => onTypeChange('meeting')}
@@ -105,7 +105,7 @@ export function ManualTab({
         </div>
 
         {/* 2. Header: Icon + Title */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-base text-gray-900 flex items-center gap-2 font-semibold m-0">
             {currentItem.tsType === 'meeting' ? (
               <UsersIcon className="text-blue-600 h-6 w-6" aria-label="meeting icon" />
@@ -127,7 +127,7 @@ export function ManualTab({
         </div>
 
         {/* 4. Back/Next buttons */}
-        <div className="flex items-center gap-2 mt-8 pt-6 border-t border-gray-100">
+        <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
           <button
             onClick={onBack}
             disabled={loading || addedItems.length === 0}

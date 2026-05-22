@@ -17,7 +17,7 @@ export function ResultSection({ title = 'Result Summary', content = '' }) {
   }
 
   return (
-    <section className="w-full bg-white border border-gray-100 rounded-lg overflow-hidden mt-2 mb-8">
+    <section className="w-full bg-white border border-gray-100 rounded-lg overflow-hidden mt-2 mb-4">
       {/* Header with icon */}
       <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
         <DocumentTextIcon className="text-gray-500 h-6 w-6" />

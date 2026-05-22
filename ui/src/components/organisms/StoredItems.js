@@ -43,10 +43,10 @@ export function StoredItems({ items = [], onToggleCheck, onDelete, onRemoveAll }
     if (!groupItems || groupItems.length === 0) return null;
     
     return (
-      <div key={type} className="mb-4">
+      <div key={type} className="mb-2">
         <div className="w-full bg-white border border-gray-100 rounded-lg overflow-hidden">
           {/* Group header */}
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {typeIcon}
               <h3 className="text-sm font-semibold text-gray-900 m-0">{typeLabel} ({groupItems.length})</h3>
@@ -65,7 +65,7 @@ export function StoredItems({ items = [], onToggleCheck, onDelete, onRemoveAll }
             {groupItems.map((item) => (
               <div
                 key={item.id}
-                className="px-6 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 flex items-center gap-3 cursor-pointer last:border-b-0"
+                className="px-4 py-2 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 flex items-center gap-3 cursor-pointer last:border-b-0"
               >
                 <input
                   type="checkbox"
@@ -74,11 +74,6 @@ export function StoredItems({ items = [], onToggleCheck, onDelete, onRemoveAll }
                   onChange={() => onToggleCheck?.(item.idx)}
                   className="w-4 h-4 rounded accent-blue-600 cursor-pointer flex-shrink-0"
                 />
-                {item.tsType === 'meeting' ? (
-                  <UsersIcon className="text-blue-600 h-6 w-6 flex-shrink-0" aria-label="meeting icon" />
-                ) : (
-                  <CheckIcon className="text-blue-600 h-6 w-6 flex-shrink-0" aria-label="task icon" />
-                )}
                 <label
                   htmlFor={`stored-${item.id}`}
                   className="text-sm text-gray-900 cursor-pointer flex-1 font-normal"
@@ -101,9 +96,9 @@ export function StoredItems({ items = [], onToggleCheck, onDelete, onRemoveAll }
   }
   
   return (
-    <section className="w-full mb-4">
+    <section className="w-full mb-2">
       {/* Header with icon */}
-      <div className="px-6 py-4 mb-4 flex items-center gap-2">
+      <div className="px-4 py-2.5 mb-2 flex items-center gap-2">
         <h3 className="text-sm font-semibold text-gray-900 m-0">Stored Items</h3>
       </div>
       

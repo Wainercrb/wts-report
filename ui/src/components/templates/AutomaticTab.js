@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { GitBranchIcon, PlusCircleIcon } from '../../utils/IconMap';
+import { PlusCircleIcon } from '../../utils/IconMap';
 import { ResultSection } from '../organisms/ResultSection';
 
 /**
@@ -32,7 +32,7 @@ export function AutomaticTab({
       <section className="w-full bg-white border border-gray-100 rounded-lg overflow-hidden">
         {/* Header with icon */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-          <GitBranchIcon className="text-blue-600 h-6 w-6" aria-label="git branch icon" />
+          {/* <GitBranchIcon className="text-blue-600 h-6 w-6" aria-label="git branch icon" /> */}
           <h3 className="text-sm font-semibold text-gray-900 m-0">
             Git URLs ({gitUrls.length})
           </h3>
@@ -79,7 +79,7 @@ export function AutomaticTab({
             : 'bg-gray-900 text-white cursor-pointer hover:bg-gray-800 hover:shadow-md'
         }`}
       >
-        <GitBranchIcon className="h-6 w-6" aria-label="check history icon" />
+        {/* <GitBranchIcon className="h-6 w-6" aria-label="check history icon" /> */}
         {loading ? 'Checking...' : 'Check Git History'}
       </button>
 
