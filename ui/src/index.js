@@ -175,6 +175,11 @@ function Index() {
     setAddedItems(prev => prev.filter(item => item.id !== itemId));
   }
 
+  function handleRemoveAddedItemsByType(tsType) {
+    // Remove all added items of a specific type
+    setAddedItems(prev => prev.filter(item => item.tsType !== tsType));
+  }
+
   function handleDeleteStoredItem(itemId) {
     // Remove item from stored items
     setStoredItems(prev => prev.filter(item => item.id !== itemId));
@@ -327,6 +332,7 @@ function Index() {
             addedItems={addedItems}
             onSaveAddedItem={handleSaveAddedItem}
             onDeleteAddedItem={handleDeleteAddedItem}
+            onRemoveAddedItemsByType={handleRemoveAddedItemsByType}
             storedItems={storedItems}
             checkedStoredItems={checkedStoredItems}
             onToggleCheck={handleToggleCheck}

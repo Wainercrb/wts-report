@@ -22,6 +22,7 @@ import { ResultSection } from '../organisms/ResultSection';
  * @param {Array} props.addedItems - Items added but not yet saved
  * @param {Function} props.onSaveAddedItem - Handler to save an added item
  * @param {Function} [props.onDeleteAddedItem] - Handler to delete an added item
+ * @param {Function} [props.onRemoveAddedItemsByType] - Handler to remove all added items of a type
  * @param {Array} props.storedItems - Items saved to storage
  * @param {Set} props.checkedStoredItems - Set of checked stored item indices
  * @param {Function} props.onToggleCheck - Handler to toggle stored item check
@@ -40,6 +41,7 @@ export function ManualTab({
   addedItems = [],
   onSaveAddedItem,
   onDeleteAddedItem,
+  onRemoveAddedItemsByType,
   storedItems = [],
   checkedStoredItems,
   onToggleCheck,
@@ -147,7 +149,7 @@ export function ManualTab({
 
       {/* 5. Added Items section - items added but not yet saved */}
       {displayAddedItems.length > 0 && (
-        <AddedItems items={displayAddedItems} onSave={onSaveAddedItem} onDelete={onDeleteAddedItem} />
+        <AddedItems items={displayAddedItems} onSave={onSaveAddedItem} onDelete={onDeleteAddedItem} onRemoveAll={onRemoveAddedItemsByType} />
       )}
 
       {/* 6. Stored Items section - items saved to storage */}
