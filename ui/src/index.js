@@ -251,47 +251,33 @@ function Index() {
   // === RENDER ===
 
   return (
-    <main style={{ maxWidth: '512px', margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
+    <main className="max-w-[512px] mx-auto flex flex-col">
       {/* Top Level Tabs (Manual / Automatic (Git)) */}
-      <nav aria-label="Tracking type" style={{ backgroundColor: '#fff', margin: '16px', marginTop: '24px', borderRadius: '8px', display: 'flex', borderBottom: '1px solid #f0f0f0' }}>
+      <nav aria-label="Tracking type" className="bg-white m-4 mt-6 rounded-lg flex border-b border-ant-border">
         <button
           onClick={() => setActiveTab('Manual')}
-          style={{
-            position: 'relative',
-            padding: '12px 16px',
-            fontSize: '14px',
-            transition: 'colors 0.2s',
-            color: activeTab === 'Manual' ? '#1677ff' : 'rgba(0, 0, 0, 0.45)',
-            fontWeight: '500',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            borderBottom: activeTab === 'Manual' ? '2px solid #1677ff' : '2px solid transparent'
-          }}
+          className={`relative px-4 py-3 text-sm transition-colors duration-200 font-medium bg-transparent border-0 cursor-pointer ${
+            activeTab === 'Manual'
+              ? 'text-ant-primary border-b-2 border-ant-primary'
+              : 'text-ant-text-tertiary border-b-2 border-transparent'
+          }`}
         >
           Manual
         </button>
         <button
           onClick={() => setActiveTab('Automatic (Git)')}
-          style={{
-            position: 'relative',
-            padding: '12px 16px',
-            fontSize: '14px',
-            transition: 'colors 0.2s',
-            color: activeTab === 'Automatic (Git)' ? '#1677ff' : 'rgba(0, 0, 0, 0.45)',
-            fontWeight: '500',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            borderBottom: activeTab === 'Automatic (Git)' ? '2px solid #1677ff' : '2px solid transparent'
-          }}
+          className={`relative px-4 py-3 text-sm transition-colors duration-200 font-medium bg-transparent border-0 cursor-pointer ${
+            activeTab === 'Automatic (Git)'
+              ? 'text-ant-primary border-b-2 border-ant-primary'
+              : 'text-ant-text-tertiary border-b-2 border-transparent'
+          }`}
         >
           Automatic (Git)
         </button>
       </nav>
 
       {/* Content container */}
-      <div style={{ paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px', paddingX: '16px' }}>
+      <div className="pt-6 flex flex-col gap-4 px-4">
         {activeTab === 'Manual' && (
           <ManualTab
             currentItem={currentItem}

@@ -60,70 +60,45 @@ export function ManualTab({
 
   return (
     <>
-      <section className="w-full" style={{ background: '#fff', border: '1px solid #f0f0f0', borderRadius: '8px', padding: '24px', marginBottom: '16px' }}>
+      <section className="w-full bg-white border border-gray-100 rounded-lg p-6 mb-4">
         {/* 1. Sub-tabs: Meeting/Tasks segmented control */}
-        <div className="mb-6" style={{ marginBottom: '24px' }}>
-          <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.04)', padding: '2px', borderRadius: '8px', display: 'flex', position: 'relative' }}>
+        <div className="mb-6">
+          <div className="bg-gray-100 p-0.5 rounded-lg flex relative">
             <button
               onClick={() => onTypeChange('meeting')}
-              className="flex-1 transition-all duration-200"
-              style={{
-                flex: 1,
-                padding: '6px 12px',
-                textAlign: 'center',
-                fontSize: '14px',
-                position: 'relative',
-                zIndex: 10,
-                color: currentItem.tsType === 'meeting' ? 'rgba(0, 0, 0, 0.88)' : 'rgba(0, 0, 0, 0.45)',
-                fontWeight: '500',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer'
-              }}
+              className={`flex-1 px-3 py-1.5 text-center text-sm font-medium cursor-pointer bg-transparent border-0 relative z-10 transition-all ${
+                currentItem.tsType === 'meeting'
+                  ? 'text-gray-900'
+                  : 'text-gray-500'
+              }`}
             >
               Meeting
             </button>
             <button
               onClick={() => onTypeChange('tasks')}
-              className="flex-1 transition-all duration-200"
-              style={{
-                flex: 1,
-                padding: '6px 12px',
-                textAlign: 'center',
-                fontSize: '14px',
-                position: 'relative',
-                zIndex: 10,
-                color: currentItem.tsType === 'tasks' ? 'rgba(0, 0, 0, 0.88)' : 'rgba(0, 0, 0, 0.45)',
-                fontWeight: '500',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer'
-              }}
+              className={`flex-1 px-3 py-1.5 text-center text-sm font-medium cursor-pointer bg-transparent border-0 relative z-10 transition-all ${
+                currentItem.tsType === 'tasks'
+                  ? 'text-gray-900'
+                  : 'text-gray-500'
+              }`}
             >
               Tasks
             </button>
             {/* Sliding background indicator */}
             <div
-              style={{
-                position: 'absolute',
-                top: '2px',
-                left: '2px',
-                bottom: '2px',
-                width: 'calc(50% - 2px)',
-                backgroundColor: '#fff',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
-                borderRadius: '6px',
-                transition: 'transform 0.3s cubic-bezier(0.645, 0.045, 0.355, 1)',
-                transform: currentItem.tsType === 'meeting' ? 'translateX(0)' : 'translateX(100%)'
-              }}
+              className={`absolute top-0.5 bottom-0.5 left-0.5 right-auto w-[calc(50%-2px)] bg-white rounded shadow-sm transition-transform duration-300 ${
+                currentItem.tsType === 'meeting'
+                  ? 'translate-x-0'
+                  : 'translate-x-[100%]'
+              }`}
             ></div>
           </div>
         </div>
 
         {/* 2. Header: Icon + Title */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '16px', color: 'rgba(0, 0, 0, 0.88)', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', margin: 0 }}>
-            <span className="material-symbols-outlined" style={{ color: '#1677ff', fontSize: '20px' }}>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-base text-gray-900 flex items-center gap-2 font-semibold m-0">
+            <span className="material-symbols-outlined text-blue-600 text-xl">
               {typeIcon}
             </span>
             <span>{typeLabel}</span>
@@ -131,91 +106,32 @@ export function ManualTab({
         </div>
 
         {/* 3. Textarea input */}
-        <div style={{ marginBottom: '16px' }}>
+        <div className="mb-4">
           <textarea
             value={currentItem.tsText}
             onChange={(e) => onTextChange(e.target.value)}
             placeholder="Type task summaries or participant details here..."
-            style={{
-              width: '100%',
-              minHeight: '120px',
-              padding: '12px',
-              fontSize: '14px',
-              lineHeight: '1.5714',
-              border: '1px solid #d9d9d9',
-              borderRadius: '6px',
-              fontFamily: "'Inter', sans-serif",
-              color: 'rgba(0, 0, 0, 0.88)',
-              boxSizing: 'border-box',
-              transition: 'all 0.2s',
-              outline: 'none'
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = '#4096ff';
-              e.target.style.boxShadow = '0 0 0 2px rgba(5, 145, 255, 0.1)';
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = '#d9d9d9';
-              e.target.style.boxShadow = 'none';
-            }}
+            className="w-full min-h-[120px] px-3 py-2 text-sm border border-gray-300 rounded focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all leading-relaxed font-['Inter',sans-serif] text-gray-900"
           />
         </div>
 
         {/* 4. Back/Next buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #f0f0f0' }}>
+        <div className="flex items-center gap-2 mt-8 pt-6 border-t border-gray-100">
           <button
             onClick={onBack}
             disabled={loading || addedItems.length === 0}
-            style={{
-              flex: 1,
-              height: '32px',
-              borderRadius: '6px',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              backgroundColor: '#fff',
-              border: '1px solid #d9d9d9',
-              boxShadow: '0 2px 0 rgba(0, 0, 0, 0.02)',
-              cursor: (loading || addedItems.length === 0) ? 'not-allowed' : 'pointer',
-              opacity: (loading || addedItems.length === 0) ? 0.5 : 1,
-              color: 'rgba(0, 0, 0, 0.88)',
-              fontWeight: '500',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => !(loading || addedItems.length === 0) && (e.target.style.color = '#1677ff', e.target.style.borderColor = '#1677ff')}
-            onMouseLeave={(e) => !(loading || addedItems.length === 0) && (e.target.style.color = 'rgba(0, 0, 0, 0.88)', e.target.style.borderColor = '#d9d9d9')}
+            className="flex-1 h-8 rounded px-3 py-2 text-sm font-medium flex items-center justify-center gap-1 bg-white border border-gray-300 text-gray-900 cursor-pointer hover:text-blue-600 hover:border-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_left</span>
+            <span className="material-symbols-outlined text-base">chevron_left</span>
             Back
           </button>
           <button
             onClick={onNext}
             disabled={loading}
-            style={{
-              flex: 1,
-              height: '32px',
-              borderRadius: '6px',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              backgroundColor: '#1677ff',
-              border: 'none',
-              boxShadow: '0 2px 0 rgba(5, 145, 255, 0.1)',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.5 : 1,
-              color: '#fff',
-              fontWeight: '500',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = '#4096ff')}
-            onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = '#1677ff')}
+            className="flex-1 h-8 rounded px-3 py-2 text-sm font-medium flex items-center justify-center gap-1 bg-blue-600 border-0 text-white cursor-pointer hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             Next
-            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_right</span>
+            <span className="material-symbols-outlined text-base">chevron_right</span>
           </button>
         </div>
       </section>
@@ -231,32 +147,13 @@ export function ManualTab({
       )}
 
       {/* 7. Finish button */}
-      <div style={{ marginTop: '16px', marginBottom: '24px' }}>
+      <div className="mt-4 mb-6">
         <button
           onClick={onFinish}
           disabled={loading || (addedItems.length === 0 && checkedStoredItems.size === 0)}
-          style={{
-            width: '100%',
-            height: '40px',
-            borderRadius: '6px',
-            backgroundColor: '#262626',
-            color: '#fff',
-            fontSize: '14px',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            border: 'none',
-            cursor: (loading || (addedItems.length === 0 && checkedStoredItems.size === 0)) ? 'not-allowed' : 'pointer',
-            opacity: (loading || (addedItems.length === 0 && checkedStoredItems.size === 0)) ? 0.5 : 1,
-            transition: 'all 0.2s',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08)'
-          }}
-          onMouseEnter={(e) => !(loading || (addedItems.length === 0 && checkedStoredItems.size === 0)) && (e.target.style.backgroundColor = '#434343')}
-          onMouseLeave={(e) => !(loading || (addedItems.length === 0 && checkedStoredItems.size === 0)) && (e.target.style.backgroundColor = '#262626')}
+          className="w-full h-10 rounded px-3 py-2 text-sm font-medium flex items-center justify-center gap-2 bg-gray-900 text-white cursor-pointer hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
         >
-          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
+          <span className="material-symbols-outlined text-lg">check_circle</span>
           Finish
         </button>
       </div>
