@@ -10,8 +10,9 @@ import { PlusCircleIcon, CheckCircleIcon, CheckIcon, UsersIcon, ArrowDownTrayIco
  * @param {Object} props
  * @param {Array} props.items - Array of added items with {id, text}
  * @param {Function} [props.onSave] - Callback when Save button is clicked with item.id
+ * @param {Function} [props.onDelete] - Callback when Delete button is clicked with item.id
  */
-export function AddedItems({ items = [], onSave }) {
+export function AddedItems({ items = [], onSave, onDelete }) {
   if (items.length === 0) {
     return null;
   }
@@ -40,13 +41,22 @@ export function AddedItems({ items = [], onSave }) {
               )}
               <span className="text-sm text-gray-900">{item.tsText || item.text}</span>
             </div>
-            <button
-              onClick={() => onSave?.(item.id)}
-              className="text-blue-500 hover:text-blue-600 transition-colors duration-200 text-sm font-medium flex items-center gap-1 bg-transparent border-0 cursor-pointer px-2 py-1 rounded"
-            >
-              <ArrowDownTrayIcon className="h-6 w-6" />
-              Save
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onDelete?.(item.id)}
+                className="text-red-400 hover:text-red-600 transition-colors duration-200 text-sm font-medium flex items-center gap-1 bg-transparent border-0 cursor-pointer px-2 py-1 rounded"
+                title="Delete item"
+              >
+                ✕
+              </button>
+              <button
+                onClick={() => onSave?.(item.id)}
+                className="text-blue-500 hover:text-blue-600 transition-colors duration-200 text-sm font-medium flex items-center gap-1 bg-transparent border-0 cursor-pointer px-2 py-1 rounded"
+              >
+                <ArrowDownTrayIcon className="h-6 w-6" />
+                Save
+              </button>
+            </div>
           </div>
         ))}
       </div>

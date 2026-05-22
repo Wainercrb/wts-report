@@ -170,6 +170,11 @@ function Index() {
     setAddedItems(prev => prev.filter(item => item.id !== itemId));
   }
 
+  function handleDeleteAddedItem(itemId) {
+    // Remove item from added items without saving
+    setAddedItems(prev => prev.filter(item => item.id !== itemId));
+  }
+
   function handleDeleteStoredItem(itemId) {
     // Remove item from stored items
     setStoredItems(prev => prev.filter(item => item.id !== itemId));
@@ -321,6 +326,7 @@ function Index() {
             loading={loading}
             addedItems={addedItems}
             onSaveAddedItem={handleSaveAddedItem}
+            onDeleteAddedItem={handleDeleteAddedItem}
             storedItems={storedItems}
             checkedStoredItems={checkedStoredItems}
             onToggleCheck={handleToggleCheck}

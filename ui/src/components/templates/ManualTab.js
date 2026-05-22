@@ -21,6 +21,7 @@ import { ResultSection } from '../organisms/ResultSection';
  * @param {boolean} props.loading - Loading state
  * @param {Array} props.addedItems - Items added but not yet saved
  * @param {Function} props.onSaveAddedItem - Handler to save an added item
+ * @param {Function} [props.onDeleteAddedItem] - Handler to delete an added item
  * @param {Array} props.storedItems - Items saved to storage
  * @param {Set} props.checkedStoredItems - Set of checked stored item indices
  * @param {Function} props.onToggleCheck - Handler to toggle stored item check
@@ -38,6 +39,7 @@ export function ManualTab({
   loading,
   addedItems = [],
   onSaveAddedItem,
+  onDeleteAddedItem,
   storedItems = [],
   checkedStoredItems,
   onToggleCheck,
@@ -145,7 +147,7 @@ export function ManualTab({
 
       {/* 5. Added Items section - items added but not yet saved */}
       {displayAddedItems.length > 0 && (
-        <AddedItems items={displayAddedItems} onSave={onSaveAddedItem} />
+        <AddedItems items={displayAddedItems} onSave={onSaveAddedItem} onDelete={onDeleteAddedItem} />
       )}
 
       {/* 6. Stored Items section - items saved to storage */}
