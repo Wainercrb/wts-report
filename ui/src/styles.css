@@ -2,34 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-:root{--max-width:900px}
+:root {
+  --max-width: 900px;
+}
 
-body{@apply bg-gray-50 text-gray-800 font-sans}
+body {
+  @apply bg-gray-50 text-gray-800 font-sans;
+  background-color: #f5f5f5 !important;
+  color: rgba(0, 0, 0, 0.88) !important;
+  font-family: 'Inter', sans-serif !important;
+  overflow-x: hidden;
+  padding-bottom: 48px;
+}
 
-.container{max-width:var(--max-width);margin:2rem auto;padding:1rem}
+/* Legacy utility classes (kept for compatibility) */
+.container {
+  max-width: var(--max-width);
+  margin: 2rem auto;
+  padding: 1rem;
+}
 
-.form-card{@apply bg-white shadow rounded-lg p-6}
+.legend {
+  @apply text-xl font-semibold mb-4;
+}
 
-.legend{@apply text-xl font-semibold mb-4}
-
-.field-label{@apply block text-sm font-medium text-gray-700 mb-1}
-
-.textarea{@apply border border-gray-300 rounded p-2 w-full resize-y}
-
-.button-row{@apply flex gap-2 mt-4}
-
-.result-area{@apply mt-4 bg-gray-100 p-3 rounded border border-gray-200}
-
-/* Tabs (CSS-only using hidden radios + UL labels) */
-.tabs .tab-input{position:absolute;opacity:0;pointer-events:none}
-.tabs ul{margin-bottom:0}
-.tab-link{display:inline-block;padding:.5rem .75rem;border-radius:.5rem .5rem 0 0;background:transparent;border:1px solid #e5e7eb;border-bottom-color:transparent;color:#374151;cursor:pointer}
-
-/* Active tab style */
-#tab-form:checked ~ ul label[for="tab-form"],
-#tab-git:checked ~ ul label[for="tab-git"]{background:#fff;color:#111827;border-color:#d1d5db;border-bottom-color:#fff;margin-bottom:-1px}
-
-.tab-content{margin-top:.5rem;border:1px solid #e5e7eb;border-radius:.5rem;padding:1rem;background:#fff}
-.tab-panel{display:none}
-#tab-form:checked ~ .tab-content .tab-form,#tab-git:checked ~ .tab-content .tab-git{display:block}
+/* Ant Design Card */
+.ant-card {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
 

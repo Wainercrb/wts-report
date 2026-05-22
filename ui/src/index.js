@@ -3,14 +3,51 @@ import ReactDOM from "react-dom";
 import "./styles.css";
 import InteractorFactory from './Interaction/InteractorFactory';
 
+// Import components
+import { ManualTab } from './components/templates/ManualTab';
+import { AutomaticTab } from './components/templates/AutomaticTab';
+
+console.log('Index.js loading...', React, ReactDOM);
 const Interactor = InteractorFactory.create();
+console.log('Interactor created:', Interactor);
 
 function Index() {
-  const [items, setItems] = useState([{ tsType: 'meeting', tsText: '' }]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  console.log('Index component rendering');
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState('Manual');
+
+  // Form state - for current item being edited
+  const [currentItem, setCurrentItem] = useState({ tsType: 'meeting', tsText: '' });
+
+  // Added Items - items that are filled but not yet saved to storage
+  const [addedItems, setAddedItems] = useState([]);
+
+  // Stored Items - items that have been saved to localStorage
+  const [storedItems, setStoredItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('wts-report-stored-items');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Track which stored items are checked for submission
+  const [checkedStoredItems, setCheckedStoredItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('wts-report-checked-items');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  // Result from LLM
   const [result, setResult] = useState('');
-  // Using CSS-only tabs (radio inputs + labels) — no JS tab buttons
-  const [gitResult, setGitResult] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Git state
   const [gitUrls, setGitUrls] = useState(() => {
     try {
       const saved = localStorage.getItem('wts-report-git-urls');
@@ -19,16 +56,21 @@ function Index() {
       return [{ id: 'url-1', url: '' }];
     }
   });
+  const [gitResult, setGitResult] = useState('');
 
+  // Listen for messages from extension
   useEffect(() => {
     function handleMessage(event) {
       const msg = event.data;
       if (!msg || !msg.command) return;
+
       if (msg.command === 'llmResult') {
         setResult(msg.result || '');
+        setLoading(false);
       }
       if (msg.command === 'gitHistoryResult') {
         setGitResult(msg.result || '');
+        setLoading(false);
       }
     }
 
@@ -36,223 +78,260 @@ function Index() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // Persist gitUrls to localStorage whenever it changes
+  // Persist stored items to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('wts-report-stored-items', JSON.stringify(storedItems));
+    } catch (e) {
+      console.error('localStorage error:', e);
+    }
+  }, [storedItems]);
+
+  // Persist git URLs to localStorage
   useEffect(() => {
     try {
       localStorage.setItem('wts-report-git-urls', JSON.stringify(gitUrls));
     } catch (e) {
-      // ignore localStorage errors
+      console.error('localStorage error:', e);
     }
   }, [gitUrls]);
 
-  function checkGitHistory() {
-    const validUrls = gitUrls.filter(item => item.url.trim() !== '');
-    
-    if (validUrls.length === 0) {
-      Interactor.showInformationMessage('Please enter at least one git URL');
+  // Persist checked items to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('wts-report-checked-items', JSON.stringify(Array.from(checkedStoredItems)));
+    } catch (e) {
+      console.error('localStorage error:', e);
+    }
+  }, [checkedStoredItems]);
+
+  // === MANUAL TAB HANDLERS ===
+
+  function handleTypeChange(type) {
+    setCurrentItem(prev => ({ ...prev, tsType: type }));
+  }
+
+  function handleTextChange(text) {
+    setCurrentItem(prev => ({ ...prev, tsText: text }));
+  }
+
+  function handleAddItem() {
+    if (!currentItem.tsText?.trim()) {
+      Interactor.showInformationMessage('Please enter text before adding a new item');
+      return;
+    }
+    // Clear the form for next item
+    setCurrentItem({ tsType: 'meeting', tsText: '' });
+  }
+
+  function handleNextStep() {
+    // Move current item to added items and clear form
+    if (!currentItem.tsText?.trim()) {
+      Interactor.showInformationMessage('Please enter text before proceeding');
       return;
     }
     
-    setGitResult(`Processing ${validUrls.length} git URL${validUrls.length > 1 ? 's' : ''}...`);
-    Interactor.sendGitUrls(validUrls);
-    Interactor.showInformationMessage(`Checking ${validUrls.length} git URL${validUrls.length > 1 ? 's' : ''}`);
+    // Add to added items
+    const newAddedItem = {
+      id: `added-${Date.now()}`,
+      ...currentItem
+    };
+    setAddedItems(prev => [...prev, newAddedItem]);
+    
+    // Clear form
+    setCurrentItem({ tsType: 'meeting', tsText: '' });
   }
 
-  function addGitUrl() {
+  function handlePrevStep() {
+    // Remove last item from added items and restore to form
+    if (addedItems.length > 0) {
+      const lastItem = addedItems[addedItems.length - 1];
+      setCurrentItem({ tsType: lastItem.tsType, tsText: lastItem.tsText });
+      setAddedItems(prev => prev.slice(0, -1));
+    }
+  }
+
+  function handleSaveAddedItem(itemId) {
+    // Move item from addedItems to storedItems
+    const itemToSave = addedItems.find(item => item.id === itemId);
+    if (!itemToSave) return;
+
+    // Create stored item
+    const storedItem = {
+      id: `stored-${Date.now()}`,
+      tsType: itemToSave.tsType,
+      tsText: itemToSave.tsText
+    };
+
+    // Add to stored items
+    setStoredItems(prev => [...prev, storedItem]);
+    
+    // Remove from added items
+    setAddedItems(prev => prev.filter(item => item.id !== itemId));
+  }
+
+  function handleDeleteStoredItem(itemId) {
+    // Remove item from stored items
+    setStoredItems(prev => prev.filter(item => item.id !== itemId));
+    
+    // Also remove from checked items if it was checked
+    const indexToRemove = storedItems.findIndex(item => item.id === itemId);
+    if (indexToRemove !== -1) {
+      setCheckedStoredItems(prev => {
+        const newChecked = new Set(prev);
+        newChecked.delete(indexToRemove);
+        return newChecked;
+      });
+    }
+  }
+
+  function handleFinish() {
+    // Submit ALL added items + only CHECKED stored items
+    const checkedStoredItemsList = storedItems.filter((_, idx) => checkedStoredItems.has(idx));
+    
+    // Combine added items and checked stored items
+    const itemsToSubmit = [
+      ...addedItems,
+      ...checkedStoredItemsList
+    ];
+
+    if (itemsToSubmit.length === 0) {
+      Interactor.showInformationMessage('Please add items or check stored items to submit');
+      return;
+    }
+
+    setLoading(true);
+    Interactor.sendFormValues(itemsToSubmit);
+  }
+
+  function handleToggleCheck(itemIndex) {
+    setCheckedStoredItems(prev => {
+      const newChecked = new Set(prev);
+      if (newChecked.has(itemIndex)) {
+        newChecked.delete(itemIndex);
+      } else {
+        newChecked.add(itemIndex);
+      }
+      return newChecked;
+    });
+  }
+
+  // === AUTOMATIC TAB HANDLERS ===
+
+  function handleUrlChange(id, url) {
+    setGitUrls(prev =>
+      prev.map(item => item.id === id ? { ...item, url } : item)
+    );
+  }
+
+  function handleAddUrl() {
     setGitUrls(prev => [
       ...prev,
       { id: `url-${Date.now()}`, url: '' }
     ]);
   }
 
-  function removeGitUrl(id) {
+  function handleDeleteUrl(id) {
     setGitUrls(prev => prev.filter(item => item.id !== id));
   }
 
-  function updateGitUrl(id, url) {
-    setGitUrls(prev =>
-      prev.map(item => item.id === id ? { ...item, url } : item)
-    );
-  }
+  function handleCheckHistory() {
+    const validUrls = gitUrls.filter(item => item.url.trim() !== '');
 
-  function nextStep() {
-    setItems(prevItems => {
-      if (currentIndex < prevItems.length - 1) {
-        setCurrentIndex(ci => ci + 1);
-        return prevItems;
-      }
-      const newItems = prevItems.concat({ tsType: 'meeting', tsText: '' });
-      setCurrentIndex(newItems.length - 1);
-      return newItems;
-    });
-  }
-
-  function prevStep() {
-    setCurrentIndex(ci => Math.max(0, ci - 1));
-  }
-
-  function finishForm() {
-    const filtered = items.filter(it => {
-      if (!it) return false;
-      if (!it.tsType) return false;
-      if (!it.tsText) return false;
-      if (String(it.tsText).trim() === '') return false;
-      return true;
-    });
-
-    if (filtered.length === 0) {
-      Interactor.showInformationMessage('No valid items to send');
+    if (validUrls.length === 0) {
+      Interactor.showInformationMessage('Please enter at least one git URL');
       return;
     }
 
-    Interactor.sendFormValues(filtered);
-    Interactor.showInformationMessage(`Sent ${filtered.length} item${filtered.length > 1 ? 's' : ''} to extension`);
+    setLoading(true);
+    setGitResult(`Processing ${validUrls.length} git URL${validUrls.length > 1 ? 's' : ''}...`);
+    Interactor.sendGitUrls(validUrls);
   }
 
-  function updateCurrentItem(partial) {
-    setItems(prevItems => {
-      const copy = prevItems.slice();
-      copy[currentIndex] = { ...copy[currentIndex], ...partial };
-      return copy;
-    });
-  }
-
-  const current = items[currentIndex] || { tsType: 'meeting', tsText: '' };
+  // === RENDER ===
 
   return (
-    <div className="container">
-      <div className="form-card">
-        <div className="tabs">
-          {/* hidden radios (controls) placed before the UL so we can style labels via sibling selectors) */}
-          <input type="radio" id="tab-form" name="tabs" defaultChecked className="tab-input" />
-          <input type="radio" id="tab-git" name="tabs" className="tab-input" />
+    <main style={{ maxWidth: '512px', margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
+      {/* Top Level Tabs (Manual / Automatic (Git)) */}
+      <nav aria-label="Tracking type" style={{ backgroundColor: '#fff', margin: '16px', marginTop: '24px', borderRadius: '8px', display: 'flex', borderBottom: '1px solid #f0f0f0' }}>
+        <button
+          onClick={() => setActiveTab('Manual')}
+          style={{
+            position: 'relative',
+            padding: '12px 16px',
+            fontSize: '14px',
+            transition: 'colors 0.2s',
+            color: activeTab === 'Manual' ? '#1677ff' : 'rgba(0, 0, 0, 0.45)',
+            fontWeight: '500',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            borderBottom: activeTab === 'Manual' ? '2px solid #1677ff' : '2px solid transparent'
+          }}
+        >
+          Manual
+        </button>
+        <button
+          onClick={() => setActiveTab('Automatic (Git)')}
+          style={{
+            position: 'relative',
+            padding: '12px 16px',
+            fontSize: '14px',
+            transition: 'colors 0.2s',
+            color: activeTab === 'Automatic (Git)' ? '#1677ff' : 'rgba(0, 0, 0, 0.45)',
+            fontWeight: '500',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            borderBottom: activeTab === 'Automatic (Git)' ? '2px solid #1677ff' : '2px solid transparent'
+          }}
+        >
+          Automatic (Git)
+        </button>
+      </nav>
 
-          <ul className="flex flex-wrap text-sm font-medium text-center text-gray-600 border-b border-gray-200">
-            <li className="mr-2">
-              <label htmlFor="tab-form" className="inline-block p-4 rounded-t-lg tab-link">Form</label>
-            </li>
-            <li className="mr-2">
-              <label htmlFor="tab-git" className="inline-block p-4 rounded-t-lg tab-link">Git History</label>
-            </li>
-          </ul>
+      {/* Content container */}
+      <div style={{ paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px', paddingX: '16px' }}>
+        {activeTab === 'Manual' && (
+          <ManualTab
+            currentItem={currentItem}
+            onTypeChange={handleTypeChange}
+            onTextChange={handleTextChange}
+            onNext={handleNextStep}
+            onBack={handlePrevStep}
+            onFinish={handleFinish}
+            result={result}
+            loading={loading}
+            addedItems={addedItems}
+            onSaveAddedItem={handleSaveAddedItem}
+            storedItems={storedItems}
+            checkedStoredItems={checkedStoredItems}
+            onToggleCheck={handleToggleCheck}
+            onDeleteStoredItem={handleDeleteStoredItem}
+          />
+        )}
 
-          <div className="tab-content">
-            <div className="tab-panel tab-form">
-              <form onSubmit={(e) => { e.preventDefault(); }}>
-                <fieldset>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-6">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="tsType"
-                          value="meeting"
-                          checked={current.tsType === 'meeting'}
-                          onChange={e => updateCurrentItem({ tsType: e.target.value })}
-                        />
-                        <span>Meeting</span>
-                      </label>
-
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="tsType"
-                          value="tasks"
-                          checked={current.tsType === 'tasks'}
-                          onChange={e => updateCurrentItem({ tsType: e.target.value })}
-                        />
-                        <span>Tasks</span>
-                      </label>
-                    </div>
-
-                    <div>
-                      <label htmlFor="tsText" className="field-label">Notes</label>
-                      <textarea
-                        id="tsText"
-                        className="textarea"
-                        value={current.tsText}
-                        onChange={e => updateCurrentItem({ tsText: e.target.value })}
-                        rows={4}
-                        placeholder="Enter details..."
-                      />
-                      <div className="text-sm text-gray-600 mt-2">Item {currentIndex + 1} of {items.length}</div>
-                    </div>
-
-                    <div className="button-row">
-                      <button type="button" className="px-3 py-1 bg-gray-200 rounded" onClick={prevStep}>Back</button>
-                      <button type="button" className="px-3 py-1 bg-blue-600 text-white rounded" onClick={nextStep}>Next</button>
-                      <button type="button" className="px-3 py-1 bg-green-600 text-white rounded" onClick={finishForm}>Finish</button>
-                    </div>
-
-                    <div className="result-area">
-                      <label htmlFor="result" className="field-label">Result</label>
-                      <textarea
-                        id="result"
-                        className="textarea"
-                        value={result}
-                        readOnly
-                        rows={8}
-                        placeholder="LLM result will appear here"
-                      />
-                    </div>
-                  </div>
-                </fieldset>
-              </form>
-            </div>
-
-            <div className="tab-panel tab-git">
-              <div className="space-y-4">
-                <div>
-                  <label className="field-label">Git Project URLs</label>
-                  <div className="space-y-2">
-                    {gitUrls.map((item) => (
-                      <div key={item.id} className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded"
-                          value={item.url}
-                          onChange={e => updateGitUrl(item.id, e.target.value)}
-                          placeholder="Enter git repository URL (e.g., https://github.com/user/repo.git)"
-                        />
-                        {gitUrls.length > 1 && (
-                          <button
-                            type="button"
-                            className="px-3 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600"
-                            onClick={() => removeGitUrl(item.id)}
-                          >
-                            Remove
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <button
-                      type="button"
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                      onClick={addGitUrl}
-                    >
-                      Add More
-                    </button>
-                    <span className="text-sm text-gray-600">{gitUrls.length} URL field{gitUrls.length > 1 ? 's' : ''}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700" onClick={checkGitHistory}>Check Git History</button>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <label className="field-label">Git History</label>
-                <textarea className="textarea" rows={12} value={gitResult} readOnly placeholder="Git history will appear here" />
-              </div>
-            </div>
-          </div>
-        </div>
+        {activeTab === 'Automatic (Git)' && (
+          <AutomaticTab
+            gitUrls={gitUrls}
+            onUrlChange={handleUrlChange}
+            onAddUrl={handleAddUrl}
+            onDeleteUrl={handleDeleteUrl}
+            onCheckHistory={handleCheckHistory}
+            gitResult={gitResult}
+            loading={loading}
+          />
+        )}
       </div>
-    </div>
+    </main>
   );
 }
 
-ReactDOM.render(<Index />, document.getElementById("index"));
+console.log('About to render Index component');
+try {
+  ReactDOM.render(<Index />, document.getElementById("index"));
+  console.log('Index component rendered');
+} catch (error) {
+  console.error('Error rendering Index component:', error);
+  document.getElementById("index").innerHTML = `<h1>Error: ${error.message}</h1><pre>${error.stack}</pre>`;
+}

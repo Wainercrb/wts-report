@@ -1,0 +1,34 @@
+/**
+ * ResultSection - Organism: Read-only result display (Ant Design style)
+ * Shows results from LLM with structured formatting
+ */
+
+import React from 'react';
+
+/**
+ * @param {Object} props
+ * @param {string} props.title - Section title
+ * @param {string} props.content - Result text/content
+ */
+export function ResultSection({ title = 'Result Summary', content = '' }) {
+  if (!content) {
+    return null;
+  }
+
+  return (
+    <section className="w-full bg-white border border-gray-100 rounded-lg overflow-hidden mt-2 mb-8">
+      {/* Header with icon */}
+      <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+        <span className="material-symbols-outlined text-gray-500 text-xl">description</span>
+        <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+      </div>
+
+      {/* Content area */}
+      <div className="p-6 bg-gray-50">
+        <div className="text-sm text-gray-900 leading-relaxed whitespace-pre-wrap break-words">
+          {content}
+        </div>
+      </div>
+    </section>
+  );
+}
