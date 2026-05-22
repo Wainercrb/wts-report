@@ -3,21 +3,18 @@
  */
 
 import React from 'react';
+import { XMarkIcon } from '../../utils/IconMap';
 
 /**
  * @param {Object} props
- * @param {Function} props.onClick - Delete handler
- * @param {string} [props.className='w-5 h-5'] - Additional Tailwind classes
+ * @param {string} [props.className=''] - Additional Tailwind classes
+ * @param {string} [props.ariaLabel='delete'] - Accessibility label
  */
-export function DeleteIcon({ onClick, className = 'w-5 h-5' }) {
+export function DeleteIcon({ className = '', ariaLabel = 'delete' }) {
   return (
-    <button
-      onClick={onClick}
-      type="button"
-      className={`text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition ${className}`}
-      aria-label="Delete"
-    >
-      ✕
-    </button>
+    <XMarkIcon 
+      className={`h-5 w-5 text-red-500 hover:text-red-700 ${className}`} 
+      aria-label={ariaLabel} 
+    />
   );
 }

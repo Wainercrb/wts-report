@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { ArchiveBoxIcon, CheckIcon, UsersIcon } from '../../utils/IconMap';
 
 /**
  * @param {Object} props
@@ -20,7 +21,7 @@ export function StoredItems({ items = [], onToggleCheck, onDelete }) {
     <section className="w-full bg-white border border-gray-100 rounded-lg overflow-hidden mb-4">
       {/* Header with icon */}
       <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-        <span className="material-symbols-outlined text-blue-600 text-xl">inventory_2</span>
+        <ArchiveBoxIcon className="text-blue-600 h-5 w-5" />
         <h3 className="text-sm font-semibold text-gray-900">Stored Items</h3>
       </div>
 
@@ -38,9 +39,11 @@ export function StoredItems({ items = [], onToggleCheck, onDelete }) {
               onChange={() => onToggleCheck?.(item.idx)}
               className="w-4 h-4 rounded accent-blue-600 cursor-pointer flex-shrink-0"
             />
-            <span className="material-symbols-outlined text-blue-600 text-base flex-shrink-0">
-              {item.tsType === 'task' ? 'assignment' : 'meeting'}
-            </span>
+            {item.tsType === 'meeting' ? (
+              <UsersIcon className="text-blue-600 h-5 w-5 flex-shrink-0" aria-label="meeting icon" />
+            ) : (
+              <CheckIcon className="text-blue-600 h-5 w-5 flex-shrink-0" aria-label="task icon" />
+            )}
             <label
               htmlFor={`stored-${item.id}`}
               className="text-sm text-gray-900 cursor-pointer flex-1 font-normal"

@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { GitBranchIcon, PlusCircleIcon } from '../../utils/IconMap';
 import { ResultSection } from '../organisms/ResultSection';
 
 /**
@@ -31,7 +32,7 @@ export function AutomaticTab({
       <section className="w-full bg-white border border-gray-100 rounded-lg overflow-hidden">
         {/* Header with icon */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-          <span className="material-symbols-outlined text-blue-600 text-xl">git_branch</span>
+          <GitBranchIcon className="text-blue-600 h-5 w-5" aria-label="git branch icon" />
           <h3 className="text-sm font-semibold text-gray-900 m-0">
             Git URLs ({gitUrls.length})
           </h3>
@@ -62,7 +63,7 @@ export function AutomaticTab({
             onClick={onAddUrl}
             className="mt-2 text-blue-600 hover:text-blue-700 transition-colors cursor-pointer text-sm font-medium flex items-center gap-1.5 bg-transparent border-0 p-1"
           >
-            <span className="material-symbols-outlined text-base">add_circle</span>
+            <PlusCircleIcon className="h-5 w-5" aria-label="add url icon" />
             Add URL
           </button>
         </div>
@@ -78,7 +79,7 @@ export function AutomaticTab({
             : 'bg-gray-900 text-white cursor-pointer hover:bg-gray-800 hover:shadow-md'
         }`}
       >
-        <span className="material-symbols-outlined text-lg">git_branch</span>
+        <GitBranchIcon className="h-5 w-5" aria-label="check history icon" />
         {loading ? 'Checking...' : 'Check Git History'}
       </button>
 

@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon, CheckIcon, UsersIcon } from '../../utils/IconMap';
 import { StoredItems } from '../organisms/StoredItems';
 import { AddedItems } from '../organisms/AddedItems';
 import { ResultSection } from '../organisms/ResultSection';
@@ -98,9 +99,11 @@ export function ManualTab({
         {/* 2. Header: Icon + Title */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-base text-gray-900 flex items-center gap-2 font-semibold m-0">
-            <span className="material-symbols-outlined text-blue-600 text-xl">
-              {typeIcon}
-            </span>
+            {currentItem.tsType === 'meeting' ? (
+              <UsersIcon className="text-blue-600 h-5 w-5" aria-label="meeting icon" />
+            ) : (
+              <CheckIcon className="text-blue-600 h-5 w-5" aria-label="task icon" />
+            )}
             <span>{typeLabel}</span>
           </h2>
         </div>
@@ -122,7 +125,7 @@ export function ManualTab({
             disabled={loading || addedItems.length === 0}
             className="flex-1 h-8 rounded px-3 py-2 text-sm font-medium flex items-center justify-center gap-1 bg-white border border-gray-300 text-gray-900 cursor-pointer hover:text-blue-600 hover:border-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            <span className="material-symbols-outlined text-base">chevron_left</span>
+            <ChevronLeftIcon className="h-5 w-5" />
             Back
           </button>
           <button
@@ -131,7 +134,7 @@ export function ManualTab({
             className="flex-1 h-8 rounded px-3 py-2 text-sm font-medium flex items-center justify-center gap-1 bg-blue-600 border-0 text-white cursor-pointer hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             Next
-            <span className="material-symbols-outlined text-base">chevron_right</span>
+            <ChevronRightIcon className="h-5 w-5" />
           </button>
         </div>
       </section>
@@ -153,7 +156,7 @@ export function ManualTab({
           disabled={loading || (addedItems.length === 0 && checkedStoredItems.size === 0)}
           className="w-full h-10 rounded px-3 py-2 text-sm font-medium flex items-center justify-center gap-2 bg-gray-900 text-white cursor-pointer hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
         >
-          <span className="material-symbols-outlined text-lg">check_circle</span>
+          <CheckCircleIcon className="h-5 w-5" />
           Finish
         </button>
       </div>
