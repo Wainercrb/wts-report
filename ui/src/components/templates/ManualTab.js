@@ -25,6 +25,7 @@ import { ResultSection } from '../organisms/ResultSection';
  * @param {Set} props.checkedStoredItems - Set of checked stored item indices
  * @param {Function} props.onToggleCheck - Handler to toggle stored item check
  * @param {Function} props.onDeleteStoredItem - Handler to delete a stored item
+ * @param {Function} [props.onRemoveAll] - Handler to remove all items of a type
  */
 export function ManualTab({
   currentItem,
@@ -40,7 +41,8 @@ export function ManualTab({
   storedItems = [],
   checkedStoredItems,
   onToggleCheck,
-  onDeleteStoredItem
+  onDeleteStoredItem,
+  onRemoveAll
 }) {
   const typeLabel = currentItem.tsType === 'meeting' ? 'Meeting' : 'Tasks';
   const typeIcon = currentItem.tsType === 'meeting' ? 'groups' : 'task_alt';
@@ -148,7 +150,7 @@ export function ManualTab({
 
       {/* 6. Stored Items section - items saved to storage */}
       {displayStoredItems.length > 0 && (
-        <StoredItems items={displayStoredItems} onToggleCheck={onToggleCheck} onDelete={onDeleteStoredItem} />
+        <StoredItems items={displayStoredItems} onToggleCheck={onToggleCheck} onDelete={onDeleteStoredItem} onRemoveAll={onRemoveAll} />
       )}
 
       {/* 7. Finish button */}
