@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { PlusCircleIcon, CheckCircleIcon, CheckIcon, UsersIcon, ArrowDownTrayIcon } from '../../utils/IconMap';
+import { PlusCircleIcon, CheckCircleIcon, CheckIcon, UsersIcon, ArrowDownTrayIcon, XMarkIcon } from '../../utils/IconMap';
 
 /**
  * @param {Object} props
@@ -44,10 +44,10 @@ export function AddedItems({ items = [], onSave, onDelete }) {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onDelete?.(item.id)}
-                className="text-red-400 hover:text-red-600 transition-colors duration-200 text-sm font-medium flex items-center gap-1 bg-transparent border-0 cursor-pointer px-2 py-1 rounded"
+                className="text-red-400 hover:text-red-600 transition-colors duration-200 flex items-center gap-1 bg-transparent border-0 cursor-pointer px-2 py-1 rounded"
                 title="Delete item"
               >
-                ✕
+                <XMarkIcon className="h-6 w-6" aria-label="delete icon" />
               </button>
               <button
                 onClick={() => onSave?.(item.id)}
