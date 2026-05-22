@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { ArchiveBoxIcon, CheckIcon, UsersIcon, XMarkIcon } from '../../utils/IconMap';
+import { CheckIcon, UsersIcon, XMarkIcon } from '../../utils/IconMap';
 
 // Helper: Group items by tsType
 function groupItemsByType(items) {
