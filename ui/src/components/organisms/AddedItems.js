@@ -68,18 +68,18 @@ export function AddedItems({ items = [], onSave, onDelete, onRemoveAll }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => onDelete?.(item.id)}
-                    className="text-red-400 hover:text-red-600 transition-colors duration-200 flex items-center gap-1 bg-transparent border-0 cursor-pointer px-2 py-1 rounded"
-                    title="Delete item"
-                  >
-                    <XMarkIcon className="h-6 w-6" aria-label="delete icon" />
-                  </button>
-                  <button
                     onClick={() => onSave?.(item.id)}
                     className="text-blue-500 hover:text-blue-600 transition-colors duration-200 text-sm font-medium flex items-center gap-1 bg-transparent border-0 cursor-pointer px-2 py-1 rounded"
                   >
                     <ArrowDownTrayIcon className="h-6 w-6" />
                     Save
+                  </button>
+                  <button
+                    onClick={() => onDelete?.(item.id)}
+                    className="text-red-400 hover:text-red-600 transition-colors duration-200 flex items-center gap-1 bg-transparent border-0 cursor-pointer px-2 py-1 rounded"
+                    title="Delete item"
+                  >
+                    <XMarkIcon className="h-6 w-6" aria-label="delete icon" />
                   </button>
                 </div>
               </div>
@@ -94,7 +94,6 @@ export function AddedItems({ items = [], onSave, onDelete, onRemoveAll }) {
     <section className="w-full mb-4">
       {/* Header with icon */}
       <div className="px-6 py-4 mb-4 flex items-center gap-2">
-        <PlusCircleIcon className="text-blue-500 h-6 w-6" />
         <h3 className="text-sm font-semibold text-gray-900 m-0">Added Items</h3>
       </div>
 
