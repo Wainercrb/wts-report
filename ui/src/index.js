@@ -216,6 +216,37 @@ function Index() {
     });
   }
 
+  function handleRemoveAllByType(type) {
+    // Update storedItems: filter out all items of this type
+    setStoredItems(prev => prev.filter(item => item.tsType !== type));
+
+    // Clean up checkedStoredItems and recalculate indices
+    setCheckedStoredItems(prev => {
+      if (prev.size === 0) return prev;  // Early exit if no checked items
+
+      // Build a map of old index → new index for remaining items
+      const indexMap = new Map();
+      let newIdx = 0;
+      storedItems.forEach((item, oldIdx) => {
+        if (item.tsType !== type) {
+          indexMap.set(oldIdx, newIdx);
+          newIdx++;
+        }
+      });
+
+      // Rebuild Set with remapped indices
+      const newSet = new Set();
+      prev.forEach(oldIdx => {
+        const mappedIdx = indexMap.get(oldIdx);
+        if (mappedIdx !== undefined) {
+          newSet.add(mappedIdx);
+        }
+      });
+
+      return newSet;
+    });
+  }
+
   // === AUTOMATIC TAB HANDLERS ===
 
   function handleUrlChange(id, url) {
@@ -294,6 +325,7 @@ function Index() {
             checkedStoredItems={checkedStoredItems}
             onToggleCheck={handleToggleCheck}
             onDeleteStoredItem={handleDeleteStoredItem}
+            onRemoveAll={handleRemoveAllByType}
           />
         )}
 
