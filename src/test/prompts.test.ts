@@ -25,8 +25,8 @@ suite('prompts/timesheet.ts', () => {
 
   test('should generate prompt with timesheet rules', () => {
     const result = getTimesheetPrompt('test-date');
-    assert.ok(result.includes('RULES:'));
-    assert.ok(result.includes('[TICKET-XXX][ProjectName]'));
+    assert.ok(result.includes('FORMATTING RULES FOR MEETINGS'));
+    assert.ok(result.includes('[TICKET-456][ms-api]'));
   });
 
   test('should include stored-item merge instruction when stored items present', () => {
@@ -36,7 +36,7 @@ suite('prompts/timesheet.ts', () => {
       'Prompt should reference work log items'
     );
     assert.ok(
-      result.includes('[meeting]') || result.includes('SECTION 1 — Meetings'),
+      result.includes('[meeting]'),
       'Prompt should instruct LLM to handle meeting items'
     );
     assert.ok(
