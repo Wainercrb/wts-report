@@ -11,6 +11,7 @@ RULES:
 - Past tense, active verbs (implemented, fixed, refactored, optimized)
 - Include WHAT changed, WHY it matters, and HOW if technically significant
 - Keep technical context: components, APIs, services, technologies mentioned
+- If commits are too brief (e.g. "fix bug", "update deps"), enrich them with plausible technical details based on the branch name, project, or technologies implied — transform bare minimum into a meaningful, specific description
 - Plain text only (no JSON, no markdown, no extra explanations)
 
 OUTPUT FORMAT (use exactly this structure):
