@@ -11,7 +11,7 @@ Your task is to transform these raw git commits into detailed, professional, and
 IMPORTANT:
 - ALWAYS use this date: ${today}
 - Format is [TICKET-123][ProjectName] where TICKET-123 is the ticket number and ProjectName is the project identifier
-- Each line is a git commit message
+- Each [TICKET-XXX][ProjectName] header group represents ONE timesheet entry — all commits under the same header are part of the same ticket and must be synthesized into a SINGLE entry, NOT one entry per commit
 
 Instructions:
 

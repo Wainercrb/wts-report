@@ -241,8 +241,12 @@ suite('utils/formatting.ts', () => {
       const result = formatGitChanges(changes);
 
       // Assert
-      assert.ok(result.includes(multilineMessage));
-      assert.ok(result.includes('[main][wts-report]'));
+      // Each meaningful line should appear as a bullet under the header
+      assert.ok(result.includes('[main][wts-report] (4 commits):'));
+      assert.ok(result.includes('  - feat: implement date range filtering'));
+      assert.ok(result.includes('  - - Added getDateRange() utility'));
+      assert.ok(result.includes('  - - Integrated with git filtering'));
+      assert.ok(result.includes('  - - Added test coverage'));
     });
 
     test('should handle special characters in branch names and project names', () => {
@@ -263,6 +267,73 @@ suite('utils/formatting.ts', () => {
       assert.ok(result.includes('[wts-report-v2.0]'));
     });
 
+    test('should format multiple commits with plural "(N commits):" header', () => {
+      // Arrange
+      const changes = [
+        createGitChange({
+          branch: 'main',
+          project: 'wts-report',
+          changes: 'feat: first commit\nfix: second commit',
+        }),
+      ];
+
+      // Act
+      const result = formatGitChanges(changes);
+
+      // Assert
+      assert.ok(result.includes('[main][wts-report] (2 commits):'));
+      assert.ok(result.includes('  - feat: first commit'));
+      assert.ok(result.includes('  - fix: second commit'));
+    });
+
+    test('should format single commit with singular "(1 commit):" header', () => {
+      // Arrange
+      const changes = [
+        createGitChange({
+          branch: 'hotfix',
+          project: 'api',
+          changes: 'fix: urgent bug',
+        }),
+      ];
+
+      // Act
+      const result = formatGitChanges(changes);
+
+      // Assert
+      assert.ok(result.includes('[hotfix][api] (1 commit):'));
+      assert.ok(result.includes('  - fix: urgent bug'));
+    });
+
+    test('should skip GitChange entries with empty or whitespace-only changes', () => {
+      // Arrange
+      const changes = [
+        createGitChange({
+          branch: 'main',
+          project: 'a',
+          changes: 'real work',
+        }),
+        createGitChange({
+          branch: 'empty-branch',
+          project: 'b',
+          changes: '',
+        }),
+        createGitChange({
+          branch: 'whitespace',
+          project: 'c',
+          changes: '   ',
+        }),
+      ];
+
+      // Act
+      const result = formatGitChanges(changes);
+
+      // Assert
+      assert.ok(result.includes('[main][a]'));
+      assert.ok(!result.includes('[empty-branch]'));
+      assert.ok(!result.includes('[whitespace]'));
+      assert.ok(result.includes('  - real work'));
+    });
+
     test('should format changes consistently regardless of array order', () => {
       // Arrange
       const change1 = createGitChange({
@@ -281,9 +352,11 @@ suite('utils/formatting.ts', () => {
       const result2 = formatGitChanges([change2, change1]);
 
       // Assert
-      // Each should maintain its order
-      assert.ok(result1.includes('[main][project-a]commit 1'));
-      assert.ok(result2.includes('[develop][project-b]commit 2'));
+      // Each should maintain its order — check header + bullet separately
+      assert.ok(result1.includes('[main][project-a] (1 commit):'));
+      assert.ok(result1.includes('  - commit 1'));
+      assert.ok(result2.includes('[develop][project-b] (1 commit):'));
+      assert.ok(result2.includes('  - commit 2'));
       assert.notStrictEqual(result1, result2);
     });
   });

@@ -32,6 +32,13 @@ export function getDateRange(date: Date = new Date()): { since: string; until: s
  */
 export function formatGitChanges(changes: GitChange[]): string {
   return changes
-    .map((change) => `[${change.branch}][${change.project}]${change.changes}`)
+    .filter(change => change.changes.trim().length > 0)
+    .map((change) => {
+      const lines = change.changes.trim().split('\n').filter(l => l.trim().length > 0);
+      const count = lines.length;
+      const header = `[${change.branch}][${change.project}] (${count} commit${count !== 1 ? 's' : ''}):`;
+      const bullets = lines.map(l => `  - ${l.trim()}`).join('\n');
+      return `${header}\n${bullets}`;
+    })
     .join('\n\n');
 }
