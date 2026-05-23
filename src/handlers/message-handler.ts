@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { WebviewMessage, IWebviewManager, ILLMService, ILogger } from '../types';
 import { listDirectory } from '../utils/command';
 import { getGitHistoryForUrls } from '../utils/git';
+import { tryCatch } from '../utils/errors';
 
 /**
  * Handles messages from the webview and routes them to appropriate handlers
@@ -37,80 +38,91 @@ export class MessageHandler {
         await this.handleGetModelInfo();
         break;
       default:
-        this.logger.log([`Unknown command: ${webMessage.command}`]);
+        this.logger.log([`Unknown command: ${(webMessage as Record<string, unknown>).command}`]);
     }
   }
 
-  private handleShowInfo(message: WebviewMessage): void {
-    const text = message.text as string | undefined;
-    if (text) {
-      vscode.window.showInformationMessage(text);
+  private handleShowInfo(message: { command: 'showInformationMessage'; text: string }): void {
+    if (message.text) {
+      vscode.window.showInformationMessage(message.text);
     }
   }
 
   private async handleGetDirectoryInfo(): Promise<void> {
-    try {
-      const result = await listDirectory();
+    const result = await tryCatch(
+      () => listDirectory(),
+      (lines: string[]) => this.logger.log(lines),
+      'getting directory info'
+    );
+    if (result.ok) {
       this.webviewManager.postMessage({
         command: 'getDirectoryInfo',
-        directoryInfo: result
-      });
-    } catch (error) {
-      this.logger.log([`Error getting directory info: ${error}`]);
-    }
-  }
-
-  private async handleCheckGitHistory(message: WebviewMessage): Promise<void> {
-    try {
-      const urls = this.extractUrls(message.urls);
-      if (!urls) {
-        vscode.window.showErrorMessage('No URLs data received');
-        return;
-      }
-
-      const gitChanges = await getGitHistoryForUrls(urls);
-      this.logger.log([`Processing ${gitChanges.length} git change(s)`]);
-      
-      const timesheet = await this.llmService.formatGitChangesAsTimesheet(gitChanges);
-      this.webviewManager.postMessage({
-        command: 'gitHistoryResult',
-        result: timesheet
-      });
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      this.logger.log([`Error processing git history: ${errorMsg}`]);
-      this.webviewManager.postMessage({
-        command: 'gitHistoryResult',
-        result: `Error: ${errorMsg}`
+        directoryInfo: result.value
       });
     }
   }
 
-  private async handleFormValues(message: WebviewMessage): Promise<void> {
-    const vals = message.values as unknown;
+  private async handleCheckGitHistory(message: { command: 'checkGitHistory'; urls: Array<{ id: string; url: string }> }): Promise<void> {
+    const urls = this.extractUrls(message.urls);
+    if (!urls) {
+      vscode.window.showErrorMessage('No URLs data received');
+      return;
+    }
+
+    const gitChangesResult = await tryCatch(
+      () => getGitHistoryForUrls(urls),
+      (lines: string[]) => this.logger.log(lines),
+      'getting git history'
+    );
+    if (!gitChangesResult.ok) {
+      this.webviewManager.postMessage({
+        command: 'gitHistoryResult',
+        result: `Error: ${gitChangesResult.error}`
+      });
+      return;
+    }
+
+    this.logger.log([`Processing ${gitChangesResult.value.length} git change(s)`]);
+    const timesheet = await this.llmService.formatGitChangesAsTimesheet(gitChangesResult.value);
+    this.webviewManager.postMessage({
+      command: 'gitHistoryResult',
+      result: timesheet
+    });
+  }
+
+  private async handleFormValues(message: { command: 'formValues'; values: Record<string, unknown> }): Promise<void> {
+    const vals = message.values;
     vscode.window.showInformationMessage('Processing form submission...');
+    this.logger.log(['Form values received from webview:', JSON.stringify(vals, null, 2)]);
 
-    try {
-      this.logger.log(['Form values received from webview:', JSON.stringify(vals, null, 2)]);
-      await this.llmService.runQuery(JSON.stringify(vals));
+    const result = await tryCatch(
+      () => this.llmService.runQuery(JSON.stringify(vals)),
+      (lines: string[]) => this.logger.log(lines),
+      'processing form'
+    );
+
+    if (result.ok) {
       vscode.window.showInformationMessage('Form processed successfully! Check the output for results.');
       this.logger.log(['Form processing completed']);
-    } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : String(e);
-      this.logger.log(['Failed to process form: ' + errorMsg]);
-      vscode.window.showErrorMessage('Failed to process form: ' + errorMsg);
+    } else {
+      this.logger.log(['Failed to process form: ' + result.error]);
+      vscode.window.showErrorMessage('Failed to process form: ' + result.error);
     }
   }
 
   private async handleGetModelInfo(): Promise<void> {
-    try {
-      const modelInfo = await this.llmService.getSelectedModelInfo();
+    const result = await tryCatch(
+      () => this.llmService.getSelectedModelInfo(),
+      (lines: string[]) => this.logger.log(lines),
+      'getting model info'
+    );
+
+    if (result.ok) {
       this.webviewManager.postMessage({
         command: 'modelInfo',
-        modelInfo
+        modelInfo: result.value
       });
-    } catch (error) {
-      this.logger.log([`Error getting model info: ${error}`]);
+    } else {
       this.webviewManager.postMessage({
         command: 'modelInfo',
         modelInfo: {
@@ -135,6 +147,15 @@ export class MessageHandler {
     if (!Array.isArray(data)) {
       return null;
     }
-    return data as Array<{ id: string; url: string }>;
+    if (!data.every(
+      (el): el is { id: string; url: string } =>
+        typeof el === 'object' &&
+        el !== null &&
+        typeof (el as Record<string, unknown>).id === 'string' &&
+        typeof (el as Record<string, unknown>).url === 'string'
+    )) {
+      return null;
+    }
+    return data;
   }
 }

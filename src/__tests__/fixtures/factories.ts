@@ -66,7 +66,7 @@ export function createGitChangeArray(
 export function createWebviewMessage(
   command: string,
   data?: Record<string, unknown>
-): WebviewMessage {
+): Record<string, unknown> {
   return { command, ...data };
 }
 
@@ -159,16 +159,17 @@ export function createFormValuesMessage(
  * Factory function to create a WebviewMessage with URLs for git history
  * Used for testing git history checking
  *
- * @param urls Array of project URLs
+ * @param urls Array of URL items with id and url
  * @returns WebviewMessage with checkGitHistory command
  *
  * @example
- * const msg = createCheckGitHistoryMessage(['C:\\projects\\repo1']);
+ * const urls = [{ id: 'proj1', url: 'C:\\projects\\repo1' }];
+ * const msg = createCheckGitHistoryMessage(urls);
  * expect(msg.command).to.equal('checkGitHistory');
- * expect(msg.urls).to.deep.equal(['C:\\projects\\repo1']);
+ * expect(msg.urls).to.deep.equal([{ id: 'proj1', url: 'C:\\projects\\repo1' }]);
  */
 export function createCheckGitHistoryMessage(
-  urls: string[]
+  urls: Array<{ id: string; url: string }>
 ): WebviewMessage {
   return {
     command: 'checkGitHistory',

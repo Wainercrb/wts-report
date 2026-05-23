@@ -5,6 +5,7 @@ import {
   OUTPUT_CHANNEL_NAME
 } from './config';
 import { WebviewMessage, ILogger } from './types';
+import { ChatModelProvider } from './services/chat-model-provider';
 import { LLMService } from './services/llm-service';
 import { WebviewManager } from './services/webview';
 import { MessageHandler } from './handlers/message-handler';
@@ -30,7 +31,12 @@ export function activate(context: vscode.ExtensionContext): void {
   const logger = new Logger(outputChannel);
 
   const webviewManager = new WebviewManager();
-  const llmService = new LLMService((lines: string[]) => logger.log(lines), webviewManager);
+  const chatModelProvider = new ChatModelProvider((lines: string[]) => logger.log(lines));
+  const llmService = new LLMService(
+    chatModelProvider,
+    (lines: string[]) => logger.log(lines),
+    (command: string, result: string) => webviewManager.postMessage({ command, result })
+  );
   const messageHandler = new MessageHandler(webviewManager, llmService, logger);
 
   context.subscriptions.push(outputChannel);

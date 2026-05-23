@@ -25,6 +25,12 @@ async function* createMockStreamResponse(text: string): AsyncGenerator<string, v
   }
 }
 
+// Helper: Create a ChatModelProvider with the given stubs
+function createModelProvider(debugLog?: sinon.SinonStub): any {
+  const { ChatModelProvider } = require('../services/chat-model-provider');
+  return new ChatModelProvider(debugLog || (() => {}));
+}
+
 // Module-level variables for vscode and LLMService
 let vscode: any;
 let LLMService: any;
@@ -51,7 +57,7 @@ try {
 suite('services/llm-service.ts', () => {
   let sandbox: sinon.SinonSandbox;
   let mockDebugLog: sinon.SinonStub;
-  let mockWebviewManager: any;
+  let mockOnResult: sinon.SinonStub;
 
   /**
    * Setup: Create sandboxed mocks for each test
@@ -61,9 +67,7 @@ suite('services/llm-service.ts', () => {
 
     // Create test helpers
     mockDebugLog = sandbox.stub();
-    mockWebviewManager = {
-      postMessage: sandbox.stub(),
-    };
+    mockOnResult = sandbox.stub();
 
     // Stub vscode.LanguageModelChatMessage.User
     sandbox.stub(vscode.LanguageModelChatMessage, 'User').callsFake(((text: string) => ({
@@ -87,24 +91,28 @@ suite('services/llm-service.ts', () => {
   // ==========================================
 
   suite('constructor', () => {
-    test('should initialize without arguments', () => {
-      const svc = new LLMService();
+    test('should initialize with required args', () => {
+      const provider = createModelProvider();
+      const svc = new LLMService(provider);
       assert.ok(svc);
       assert.strictEqual(typeof svc, 'object');
     });
 
     test('should accept debugLogFn', () => {
-      const svc = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const svc = new LLMService(provider, mockDebugLog);
       assert.ok(svc);
     });
 
-    test('should accept webviewManager', () => {
-      const svc = new LLMService(undefined, mockWebviewManager);
+    test('should accept onResult callback', () => {
+      const provider = createModelProvider();
+      const svc = new LLMService(provider, undefined, mockOnResult);
       assert.ok(svc);
     });
 
-    test('should accept both debugLogFn and webviewManager', () => {
-      const svc = new LLMService(mockDebugLog, mockWebviewManager);
+    test('should accept all constructor args', () => {
+      const provider = createModelProvider(mockDebugLog);
+      const svc = new LLMService(provider, mockDebugLog, mockOnResult);
       assert.ok(svc);
     });
   });
@@ -115,7 +123,8 @@ suite('services/llm-service.ts', () => {
 
   suite('formatGitChangesAsTimesheet', () => {
     test('should return fallback message when gitChanges array is empty', async () => {
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
       const result = await service.formatGitChangesAsTimesheet([]);
       assert.strictEqual(result, 'No git changes found for today');
     });
@@ -137,29 +146,12 @@ suite('services/llm-service.ts', () => {
       };
 
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
       const result = await service.formatGitChangesAsTimesheet(gitChanges);
 
       assert.ok(result);
       assert.ok(result.length > 0);
-    });
-
-    test('should call vscode.lm.selectChatModels with gpt-4o filter', async () => {
-      const gitChanges = createGitChangeArray(1);
-      const mockModel = {
-        id: 'gpt-4o',
-        sendRequest: sandbox.stub().resolves({
-          text: createMockStreamResponse('response'),
-        }),
-      };
-      vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
-
-      await service.formatGitChangesAsTimesheet(gitChanges);
-
-      assert.ok(vscode.lm.selectChatModels.calledOnce);
-      const callArgs = vscode.lm.selectChatModels.getCall(0).args[0];
-      assert.strictEqual(callArgs.family, 'gpt-4o');
     });
 
     test('should accumulate streamed text chunks', async () => {
@@ -171,7 +163,8 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       const result = await service.formatGitChangesAsTimesheet(gitChanges);
       assert.strictEqual(result, 'chunk1chunk2chunk3');
@@ -186,7 +179,8 @@ suite('services/llm-service.ts', () => {
         }),
       ];
       vscode.lm.selectChatModels.resolves([]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       const result = await service.formatGitChangesAsTimesheet(gitChanges);
 
@@ -195,22 +189,17 @@ suite('services/llm-service.ts', () => {
       assert.ok(result.includes('commit message'));
     });
 
-    test('should return error message when selectChatModels rejects', async () => {
+    test('should return formatted changes when selectChatModels rejects (error is caught at model level)', async () => {
       const gitChanges = createGitChangeArray(1);
       vscode.lm.selectChatModels.rejects(new Error('Model selection failed'));
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       const result = await service.formatGitChangesAsTimesheet(gitChanges);
-      assert.strictEqual(result, 'Error formatting timesheet');
-    });
-
-    test('should log error when exception occurs', async () => {
-      const gitChanges = createGitChangeArray(1);
-      vscode.lm.selectChatModels.rejects(new Error('LLM error'));
-      const service = new LLMService(mockDebugLog);
-
-      await service.formatGitChangesAsTimesheet(gitChanges);
-      assert.ok(mockDebugLog.calledWithMatch(['formatGitChangesAsTimesheet error: Error: LLM error']));
+      // Error is caught by ChatModelProvider.getModels(), which returns []
+      // so getAvailableChatModel returns undefined and the method returns raw changes
+      assert.ok(result.includes('[branch-0]'));
+      assert.ok(result.includes('[project-0]'));
     });
 
     test('should create User messages with prompts', async () => {
@@ -222,7 +211,8 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       await service.formatGitChangesAsTimesheet(gitChanges);
 
@@ -246,7 +236,8 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       const result = await service.formatGitChangesAsTimesheet(gitChanges);
       assert.ok(result);
@@ -261,7 +252,8 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       await service.formatGitChangesAsTimesheet(gitChanges);
       assert.ok(mockModel.sendRequest.calledOnce);
@@ -276,7 +268,8 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       await service.formatGitChangesAsTimesheet(gitChanges);
       assert.ok(mockDebugLog.calledWithMatch(['formatGitChangesAsTimesheet: LLM completed successfully']));
@@ -297,25 +290,12 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       await service.runQuery(userQuery);
 
       assert.ok(mockDebugLog.calledWithMatch(['=== LLM checking (command) received query ===', userQuery]));
-    });
-
-    test('should call vscode.lm.selectChatModels', async () => {
-      const mockModel = {
-        id: 'gpt-4o',
-        sendRequest: sandbox.stub().resolves({
-          text: createMockStreamResponse('response'),
-        }),
-      };
-      vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
-
-      await service.runQuery('test query');
-      assert.ok(vscode.lm.selectChatModels.calledOnce);
     });
 
     test('should create User messages with prompt and query', async () => {
@@ -326,7 +306,8 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       await service.runQuery('{"test": "data"}');
 
@@ -343,7 +324,8 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
       const mockToken = { isCancellationRequested: false };
 
       await service.runQuery('test', undefined, mockToken as any);
@@ -361,7 +343,8 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       await service.runQuery('test');
 
@@ -376,7 +359,8 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
       const mockResponse = { markdown: sandbox.stub() };
 
       await service.runQuery('test', mockResponse);
@@ -393,14 +377,15 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       assert.doesNotThrow(async () => {
         await service.runQuery('test', undefined);
       });
     });
 
-    test('should post message to webviewManager if available', async () => {
+    test('should post message to onResult if available', async () => {
       const mockModel = {
         id: 'gpt-4o',
         sendRequest: sandbox.stub().resolves({
@@ -408,34 +393,38 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog, mockWebviewManager);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog, mockOnResult);
 
       await service.runQuery('test');
 
-      assert.ok(mockWebviewManager.postMessage.calledOnce);
-      const messageArg = mockWebviewManager.postMessage.getCall(0).args[0];
-      assert.strictEqual(messageArg.command, 'llmResult');
-      assert.strictEqual(messageArg.result, 'llm result');
+      assert.ok(mockOnResult.calledOnce);
+      const messageArg = mockOnResult.getCall(0).args;
+      assert.strictEqual(messageArg[0], 'llmResult');
+      assert.strictEqual(messageArg[1], 'llm result');
     });
 
     test('should return silently when no model available', async () => {
       vscode.lm.selectChatModels.resolves([]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       const result = await service.runQuery('test');
 
       assert.strictEqual(result, undefined);
-      assert.ok(mockDebugLog.calledWithMatch(['No gpt-4o family chat model available']));
     });
 
-    test('should catch and log exceptions', async () => {
+    test('should catch and log exceptions from model selection', async () => {
       const errorMsg = 'Query failed';
       vscode.lm.selectChatModels.rejects(new Error(errorMsg));
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       await service.runQuery('test');
 
-      assert.ok(mockDebugLog.calledWithMatch(['runQuery error: ' + errorMsg]));
+      // Error is caught by ChatModelProvider.getModels, which returns empty array
+      // runQuery then sees no model available and handles gracefully
+      assert.ok(mockDebugLog.calledWithMatch(['ERROR: getModels - Error: ' + errorMsg]));
     });
 
     test('should handle response.markdown undefined', async () => {
@@ -446,7 +435,8 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
       const mockResponse = {}; // No markdown function
 
       assert.doesNotThrow(async () => {
@@ -463,7 +453,8 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       await service.runQuery('test');
 
@@ -491,7 +482,8 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       assert.doesNotThrow(async () => {
         await service.formatGitChangesAsTimesheet(gitChanges);
@@ -507,14 +499,15 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService();
+      const provider = createModelProvider();
+      const service = new LLMService(provider);
 
       assert.doesNotThrow(async () => {
         await service.formatGitChangesAsTimesheet(gitChanges);
       });
     });
 
-    test('should work without webviewManager provided', async () => {
+    test('should work without onResult provided', async () => {
       const mockModel = {
         id: 'gpt-4o',
         sendRequest: sandbox.stub().resolves({
@@ -522,7 +515,8 @@ suite('services/llm-service.ts', () => {
         }),
       };
       vscode.lm.selectChatModels.resolves([mockModel]);
-      const service = new LLMService(mockDebugLog);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
 
       assert.doesNotThrow(async () => {
         await service.runQuery('test');

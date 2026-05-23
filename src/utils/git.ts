@@ -22,7 +22,7 @@ export async function getGitLogForToday(cwd: string): Promise<string> {
   return executeCommand('git', args, cwd);
 }
 
-function extractProjectName(path: string): string {
+export function extractProjectName(path: string): string {
   return path.split(/[\/\\]/).filter(p => p.length > 0).pop() || 'unknown';
 }
 

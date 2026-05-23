@@ -7,8 +7,14 @@ export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
 
 /**
  * Message sent from webview to extension
+ * Discriminated union for type-safe command handling
  */
-export type WebviewMessage = { command: string } & Record<string, unknown>;
+export type WebviewMessage =
+  | { command: 'showInformationMessage'; text: string }
+  | { command: 'getDirectoryInfo' }
+  | { command: 'checkGitHistory'; urls: Array<{ id: string; url: string }> }
+  | { command: 'formValues'; values: Record<string, unknown> }
+  | { command: 'getModelInfo' };
 
 /**
  * Represents a git change/commit record
@@ -36,11 +42,15 @@ export interface IWebviewManager {
 }
 
 /**
- * Command executor interface for shell operations
+ * Information about an available language model
  */
-export interface ICommandExecutor {
-  runDirCommand(callback: (output: string) => void): void;
-  runGitLog(callback: (output: string) => void, cwd?: string): void;
+export interface ModelInfo {
+  id: string;
+  name: string;
+  pricing: string;
+  isFree: boolean;
+  vendor: string;
+  maxTokens: number;
 }
 
 /**
@@ -49,10 +59,10 @@ export interface ICommandExecutor {
 export interface ILLMService {
   runQuery(query: string, response?: { markdown?: (text: string) => void }, token?: vscode.CancellationToken): Promise<void>;
   formatGitChangesAsTimesheet(gitChanges: GitChange[]): Promise<string>;
-  getAvailableModelsInfo(): Promise<Array<{ id: string; name: string; pricing: string; isFree: boolean; vendor: string; maxTokens: number }>>;
+  getAvailableModelsInfo(): Promise<ModelInfo[]>;
   getSelectedModelInfo(): Promise<{
-    selectedModel: { id: string; name: string; pricing: string; isFree: boolean; vendor: string; maxTokens: number } | null;
-    availableModels: Array<{ id: string; name: string; pricing: string; isFree: boolean; vendor: string; maxTokens: number }>;
+    selectedModel: ModelInfo | null;
+    availableModels: ModelInfo[];
     isFreeModel: boolean;
     freeModelNotFound: boolean;
   }>;

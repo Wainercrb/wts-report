@@ -18,6 +18,7 @@ import { assert } from '../__tests__/setup';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 import { activate } from '../extension';
+import { ChatModelProvider } from '../services/chat-model-provider';
 import { WebviewManager } from '../services/webview';
 import { LLMService } from '../services/llm-service';
 import { MessageHandler } from '../handlers/message-handler';
@@ -66,7 +67,12 @@ suite('Integration: Extension End-to-End', () => {
     // Create real service instances
     mockLogger = createMockLogger(sandbox);
     webviewManager = new WebviewManager();
-    llmService = new LLMService((lines: string[]) => mockLogger.log(lines), webviewManager);
+    const chatModelProvider = new ChatModelProvider((lines: string[]) => mockLogger.log(lines));
+    llmService = new LLMService(
+      chatModelProvider,
+      (lines: string[]) => mockLogger.log(lines),
+      (command: string, result: string) => webviewManager.postMessage({ command, result })
+    );
     messageHandler = new MessageHandler(webviewManager, llmService, mockLogger);
 
     // Mock vscode API methods that would interact with VSCode (store as instance vars to reuse)
@@ -230,7 +236,7 @@ suite('Integration: Extension End-to-End', () => {
   suite('Integration Flow: Git + LLM Services', () => {
     test('should extract git history and send to LLM for formatting', async () => {
       // Arrange
-      const urls = ['C:\\projects\\repo1', 'C:\\projects\\repo2'];
+      const urls = [{ id: 'proj1', url: 'C:\\projects\\repo1' }, { id: 'proj2', url: 'C:\\projects\\repo2' }];
       const gitChanges = createGitChangeArray(2);
       const message = createCheckGitHistoryMessage(urls);
       const postMessageStub = sandbox.stub(webviewManager, 'postMessage');
@@ -249,7 +255,7 @@ suite('Integration: Extension End-to-End', () => {
 
     test('should handle multiple git repositories and aggregate results', async () => {
       // Arrange
-      const urls = ['C:\\projects\\repo1', 'C:\\projects\\repo2', 'C:\\projects\\repo3'];
+      const urls = [{ id: 'proj1', url: 'C:\\projects\\repo1' }, { id: 'proj2', url: 'C:\\projects\\repo2' }, { id: 'proj3', url: 'C:\\projects\\repo3' }];
       const message = createCheckGitHistoryMessage(urls);
       const gitChanges = createGitChangeArray(3, { branch: 'main' });
 
@@ -338,7 +344,7 @@ suite('Integration: Extension End-to-End', () => {
   suite('Error Recovery and Degradation', () => {
     test('should handle git not available with graceful message', async () => {
       // Arrange
-      const message = createCheckGitHistoryMessage(['C:\\projects\\repo1']);
+      const message = createCheckGitHistoryMessage([{ id: 'proj1', url: 'C:\\projects\\repo1' }]);
       // showErrorStub already from setup
 
       // Mock git utility to fail
@@ -372,7 +378,7 @@ suite('Integration: Extension End-to-End', () => {
 
     test('should continue operating after first error', async () => {
       // Arrange
-      const message1 = createCheckGitHistoryMessage(['C:\\projects\\repo1']);
+      const message1 = createCheckGitHistoryMessage([{ id: 'proj1', url: 'C:\\projects\\repo1' }]);
       const message2 = createShowInfoMessage('Test after error');
       // showInfoStub already from setup
 
@@ -411,7 +417,7 @@ suite('Integration: Extension End-to-End', () => {
 
     test('should log errors for debugging', async () => {
       // Arrange
-      const message = createCheckGitHistoryMessage(['C:\\projects\\repo1']);
+      const message = createCheckGitHistoryMessage([{ id: 'proj1', url: 'C:\\projects\\repo1' }]);
       // mockLogger.log already exists from setup
 
       // Mock git to fail with specific error
@@ -469,7 +475,7 @@ suite('Integration: Extension End-to-End', () => {
     test('should maintain state across mixed message types', async () => {
       // Arrange
       const infoMessage = createShowInfoMessage('Status update');
-      const gitMessage = createCheckGitHistoryMessage(['C:\\projects\\repo1']);
+      const gitMessage = createCheckGitHistoryMessage([{ id: 'proj1', url: 'C:\\projects\\repo1' }]);
       // showInfoStub already from setup - reset it
       showInfoStub.resetHistory();
 
@@ -492,7 +498,7 @@ suite('Integration: Extension End-to-End', () => {
     test('should handle interleaved getDirectoryInfo and git messages', async () => {
       // Arrange
       const dirMessage = createWebviewMessage('getDirectoryInfo');
-      const gitMessage = createCheckGitHistoryMessage(['C:\\projects\\repo1']);
+      const gitMessage = createCheckGitHistoryMessage([{ id: 'proj1', url: 'C:\\projects\\repo1' }]);
       const postMessageStub = sandbox.stub(webviewManager, 'postMessage');
 
       // Mock utilities
@@ -586,7 +592,7 @@ suite('Integration: Extension End-to-End', () => {
     test('should verify webview manager and llm service are properly wired', () => {
       // Arrange
       const postMessageStub = sandbox.stub(webviewManager, 'postMessage');
-      const message = createCheckGitHistoryMessage(['C:\\projects\\repo1']);
+      const message = createCheckGitHistoryMessage([{ id: 'proj1', url: 'C:\\projects\\repo1' }]);
 
       // Mock git utility
       sandbox.stub(require('../utils/git'), 'getGitHistoryForUrls').resolves(createGitChangeArray(1));
