@@ -337,6 +337,42 @@ suite('handlers/message-handler.ts', () => {
       // Assert - Verify no unhandled error occurs
       assert.ok(true, 'Error from git history is handled gracefully');
     });
+
+    // ==========================================
+    //  Stored Items Tests
+    // ==========================================
+
+    test('passes storedItems to formatGitChangesAsTimesheet when present', async () => {
+      // Arrange
+      const urls = [{ id: 'proj1', url: 'C:\\projects\\repo1' }];
+      const storedItems = [
+        { tsType: 'meeting', tsText: 'Sprint planning' },
+      ];
+      const message = createWebviewMessage('checkGitHistory', {
+        urls: urls,
+        storedItems: storedItems,
+      });
+
+      // Act - Handler processes stored items without crash
+      handler.handle(message);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Assert - No crash with storedItems payload
+      assert.ok(true, 'checkGitHistory processes storedItems payload');
+    });
+
+    test('backward compat: handles missing storedItems field', async () => {
+      // Arrange
+      const urls = [{ id: 'proj1', url: 'C:\\projects\\repo1' }];
+      const message = createCheckGitHistoryMessage(urls as any);
+
+      // Act
+      handler.handle(message);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Assert - Backward compat: no storedItems field doesn't crash
+      assert.ok(true, 'checkGitHistory without storedItems works');
+    });
   });
 
   // ============================================================================

@@ -118,55 +118,6 @@ export function ModelSelector() {
               </div>
             </div>
           )}
-
-          {/* Warning Messages */}
-          {freeModelNotFound && availableModels.length > 0 && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-xs text-red-800 font-medium">
-                ⚠️ No free tier models found (0x pricing). The selected model requires payment.
-              </p>
-            </div>
-          )}
-
-          {/* Free Models Highlight */}
-          {availableModels.some(m => m.isFree) && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-              <p className="text-xs font-semibold text-green-900 mb-2">💚 Free Models Available (0x Pricing):</p>
-              <div className="flex flex-wrap gap-2">
-                {availableModels
-                  .filter(m => m.isFree)
-                  .sort((a, b) => b.maxTokens - a.maxTokens)
-                  .map(model => (
-                    <div key={model.id} className="flex flex-col gap-1 bg-white px-2 py-1 rounded border border-green-200">
-                      <span className="text-xs font-medium text-gray-900">{model.name}</span>
-                      <span className="text-xs text-green-700 font-semibold">{model.pricing} • {model.maxTokens.toLocaleString()} tokens</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* Paid Models Summary */}
-          {availableModels.some(m => !m.isFree) && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
-              <p className="text-xs font-semibold text-amber-900 mb-2">💰 Paid Models:</p>
-              <div className="flex flex-wrap gap-2">
-                {availableModels
-                  .filter(m => !m.isFree)
-                  .sort((a, b) => {
-                    const valueA = parseFloat(a.pricing);
-                    const valueB = parseFloat(b.pricing);
-                    return valueA - valueB;
-                  })
-                  .map(model => (
-                    <div key={model.id} className="flex flex-col gap-1 bg-white px-2 py-1 rounded border border-amber-200">
-                      <span className="text-xs font-medium text-gray-900">{model.name}</span>
-                      <span className="text-xs text-amber-700 font-semibold">{model.pricing}x • {model.maxTokens.toLocaleString()} tokens</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
         </div>
       ) : (
         <div className="p-3 bg-red-50 border border-red-200 rounded-md">

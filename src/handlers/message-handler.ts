@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { WebviewMessage, IWebviewManager, ILLMService, ILogger } from '../types';
+import { WebviewMessage, StoredItem, IWebviewManager, ILLMService, ILogger } from '../types';
 import { listDirectory } from '../utils/command';
 import { getGitHistoryForUrls } from '../utils/git';
 import { tryCatch } from '../utils/errors';
@@ -62,7 +62,7 @@ export class MessageHandler {
     }
   }
 
-  private async handleCheckGitHistory(message: { command: 'checkGitHistory'; urls: Array<{ id: string; url: string }> }): Promise<void> {
+  private async handleCheckGitHistory(message: { command: 'checkGitHistory'; urls: Array<{ id: string; url: string }>; storedItems?: StoredItem[] }): Promise<void> {
     const urls = this.extractUrls(message.urls);
     if (!urls) {
       vscode.window.showErrorMessage('No URLs data received');
@@ -82,8 +82,12 @@ export class MessageHandler {
       return;
     }
 
+    const storedItems = Array.isArray(message.storedItems) ? message.storedItems : undefined;
     this.logger.log([`Processing ${gitChangesResult.value.length} git change(s)`]);
-    const timesheet = await this.llmService.formatGitChangesAsTimesheet(gitChangesResult.value);
+    if (storedItems && storedItems.length > 0) {
+      this.logger.log([`Including ${storedItems.length} stored item(s)`]);
+    }
+    const timesheet = await this.llmService.formatGitChangesAsTimesheet(gitChangesResult.value, storedItems);
     this.webviewManager.postMessage({
       command: 'gitHistoryResult',
       result: timesheet

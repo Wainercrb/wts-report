@@ -58,6 +58,7 @@ function Index() {
     }
   });
   const [gitResult, setGitResult] = useState('');
+  const [storedItemsIncluded, setStoredItemsIncluded] = useState(0);
 
   // Listen for messages from extension
   useEffect(() => {
@@ -285,9 +286,16 @@ function Index() {
       return;
     }
 
+    const checkedItems = storedItems.filter((_, idx) => checkedStoredItems.has(idx));
+
     setLoading(true);
-    setGitResult(`Processing ${validUrls.length} git URL${validUrls.length > 1 ? 's' : ''}...`);
-    Interactor.sendGitUrls(validUrls);
+    setStoredItemsIncluded(checkedItems.length);
+    let status = `Processing ${validUrls.length} git URL${validUrls.length > 1 ? 's' : ''}`;
+    if (checkedItems.length > 0) {
+      status += `, including ${checkedItems.length} stored item${checkedItems.length > 1 ? 's' : ''}`;
+    }
+    setGitResult(`${status}...`);
+    Interactor.sendGitUrls(validUrls, checkedItems.length > 0 ? checkedItems : undefined);
   }
 
   // === RENDER ===
@@ -356,6 +364,7 @@ function Index() {
             onCheckHistory={handleCheckHistory}
             gitResult={gitResult}
             loading={loading}
+            storedItemsIncluded={storedItemsIncluded}
           />
         )}
       </div>

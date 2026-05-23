@@ -38,10 +38,11 @@ function createFromVsCodeApi(vscode) {
       values: values
     });
 
-  Interactor.sendGitUrls = urls =>
+  Interactor.sendGitUrls = (urls, storedItems) =>
     vscode.postMessage({
       command: 'checkGitHistory',
-      urls: urls
+      urls: urls,
+      ...(storedItems && storedItems.length > 0 ? { storedItems } : {})
     });
 
   Interactor.getDirectoryInfo = callback => {

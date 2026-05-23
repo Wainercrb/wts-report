@@ -12,9 +12,17 @@ export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
 export type WebviewMessage =
   | { command: 'showInformationMessage'; text: string }
   | { command: 'getDirectoryInfo' }
-  | { command: 'checkGitHistory'; urls: Array<{ id: string; url: string }> }
+  | { command: 'checkGitHistory'; urls: Array<{ id: string; url: string }>; storedItems?: StoredItem[] }
   | { command: 'formValues'; values: Record<string, unknown> }
   | { command: 'getModelInfo' };
+
+/**
+ * A manually entered work log item (meeting or task) stored in the UI
+ */
+export interface StoredItem {
+  tsType: string;
+  tsText: string;
+}
 
 /**
  * Represents a git change/commit record
@@ -58,7 +66,7 @@ export interface ModelInfo {
  */
 export interface ILLMService {
   runQuery(query: string, response?: { markdown?: (text: string) => void }, token?: vscode.CancellationToken): Promise<void>;
-  formatGitChangesAsTimesheet(gitChanges: GitChange[]): Promise<string>;
+  formatGitChangesAsTimesheet(gitChanges: GitChange[], storedItems?: StoredItem[]): Promise<string>;
   getAvailableModelsInfo(): Promise<ModelInfo[]>;
   getSelectedModelInfo(): Promise<{
     selectedModel: ModelInfo | null;

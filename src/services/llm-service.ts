@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ILLMService, GitChange } from '../types';
+import { ILLMService, GitChange, StoredItem } from '../types';
 import { getFormattedDate, formatGitChanges } from '../utils/formatting';
 import { getTimesheetPrompt, getWorkLogPrompt } from '../prompts';
 import { ChatModelProvider } from './chat-model-provider';
@@ -24,7 +24,10 @@ export class LLMService implements ILLMService {
   /**
    * Format git changes as a timesheet, optionally using LLM for formatting.
    */
-  async formatGitChangesAsTimesheet(gitChanges: GitChange[]): Promise<string> {
+  async formatGitChangesAsTimesheet(
+    gitChanges: GitChange[],
+    storedItems?: StoredItem[]
+  ): Promise<string> {
     if (gitChanges.length === 0) {
       return LLMService.NO_CHANGES_MSG;
     }
@@ -45,6 +48,15 @@ export class LLMService implements ILLMService {
           vscode.LanguageModelChatMessage.User(prompt),
           vscode.LanguageModelChatMessage.User(`Git commits by ticket:\n${formattedChanges}`)
         ];
+
+        if (storedItems && storedItems.length > 0) {
+          const itemsText = storedItems
+            .map(i => `[${i.tsType}] ${i.tsText}`)
+            .join('\n');
+          messages.push(vscode.LanguageModelChatMessage.User(
+            `Below are manually entered work log items. Merge them into the appropriate sections of the timesheet:\n${itemsText}`
+          ));
+        }
 
         const result = await this.executeQuery(messages);
         this.debugLog([`formatGitChangesAsTimesheet: LLM completed successfully`]);

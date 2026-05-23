@@ -16,6 +16,7 @@ import { ResultSection } from '../organisms/ResultSection';
  * @param {Function} props.onCheckHistory - Check Git History button handler
  * @param {string} props.gitResult - Git analysis result text
  * @param {boolean} props.loading - Loading state
+ * @param {number} props.storedItemsIncluded - Number of stored items included in request
  */
 export function AutomaticTab({
   gitUrls,
@@ -24,7 +25,8 @@ export function AutomaticTab({
   onDeleteUrl,
   onCheckHistory,
   gitResult,
-  loading
+  loading,
+  storedItemsIncluded = 0
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -82,6 +84,13 @@ export function AutomaticTab({
         {/* <GitBranchIcon className="h-6 w-6" aria-label="check history icon" /> */}
         {loading ? 'Checking...' : 'Check Git History'}
       </button>
+
+      {/* Stored items indicator */}
+      {storedItemsIncluded > 0 && (
+        <div className="text-xs text-blue-600 font-medium text-center -mt-2">
+          Including {storedItemsIncluded} stored item{storedItemsIncluded !== 1 ? 's' : ''}
+        </div>
+      )}
 
       {/* Result section */}
       {gitResult && (
