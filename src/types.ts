@@ -12,9 +12,17 @@ export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
 export type WebviewMessage =
   | { command: 'showInformationMessage'; text: string }
   | { command: 'getDirectoryInfo' }
-  | { command: 'checkGitHistory'; urls: Array<{ id: string; url: string }>; storedItems?: StoredItem[] }
+  | { command: 'checkGitHistory'; urls: UrlEntry[]; storedItems?: StoredItem[] }
   | { command: 'formValues'; values: Record<string, unknown> }
   | { command: 'getModelInfo' };
+
+/**
+ * A URL entry with an identifier, used for tracking selected git URLs from the UI
+ */
+export interface UrlEntry {
+  id: string;
+  url: string;
+}
 
 /**
  * A manually entered work log item (meeting or task) stored in the UI

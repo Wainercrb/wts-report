@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { WebviewMessage, StoredItem, IWebviewManager, ILLMService, ILogger } from '../types';
+import { WebviewMessage, UrlEntry, StoredItem, IWebviewManager, ILLMService, ILogger } from '../types';
 import { listDirectory } from '../utils/command';
 import { getGitHistoryForUrls } from '../utils/git';
 import { tryCatch } from '../utils/errors';
@@ -62,7 +62,7 @@ export class MessageHandler {
     }
   }
 
-  private async handleCheckGitHistory(message: { command: 'checkGitHistory'; urls: Array<{ id: string; url: string }>; storedItems?: StoredItem[] }): Promise<void> {
+  private async handleCheckGitHistory(message: { command: 'checkGitHistory'; urls: UrlEntry[]; storedItems?: StoredItem[] }): Promise<void> {
     const urls = this.extractUrls(message.urls);
     if (!urls) {
       vscode.window.showErrorMessage('No URLs data received');
@@ -147,7 +147,7 @@ export class MessageHandler {
     );
   }
 
-  private extractUrls(data: unknown): Array<{ id: string; url: string }> | null {
+  private extractUrls(data: unknown): UrlEntry[] | null {
     if (!Array.isArray(data)) {
       return null;
     }

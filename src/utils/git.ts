@@ -1,5 +1,5 @@
 import { executeCommand } from './command';
-import { GitChange } from '../types';
+import { GitChange, UrlEntry } from '../types';
 import { getFormattedDate, getDateRange } from './formatting';
 
 export async function getGitBranch(cwd: string): Promise<string> {
@@ -27,7 +27,7 @@ export function extractProjectName(path: string): string {
 }
 
 export async function getGitHistoryForUrls(
-  urls: Array<{ id: string; url: string }>
+  urls: UrlEntry[]
 ): Promise<GitChange[]> {
   if (urls.length === 0) {
     return [];

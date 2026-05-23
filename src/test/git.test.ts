@@ -1,5 +1,6 @@
 import * as sinon from 'sinon';
 import { createTestSandbox, assert } from '../__tests__/setup';
+import { UrlEntry } from '../types';
 import {
   GIT_BRANCH_MAIN,
   GIT_BRANCH_FEATURE,
@@ -212,7 +213,7 @@ suite('utils/git.ts', () => {
     test('should handle commits with no URLs (empty array)', async () => {
       // Arrange
       const { getGitHistoryForUrls } = require('../utils/git');
-      const urls: Array<{ id: string; url: string }> = [];
+      const urls: UrlEntry[] = [];
 
       // Act
       const result = await getGitHistoryForUrls(urls);

@@ -1,4 +1,4 @@
-import { GitChange, WebviewMessage, ILogger } from '../../types';
+import { GitChange, UrlEntry, WebviewMessage, ILogger } from '../../types';
 import * as sinon from 'sinon';
 
 /**
@@ -104,8 +104,8 @@ export function createUrlItem(
  */
 export function createUrlItemArray(
   count: number,
-  baseOverrides?: Partial<{ id: string; url: string }>
-): Array<{ id: string; url: string }> {
+  baseOverrides?: Partial<UrlEntry>
+): UrlEntry[] {
   return Array.from({ length: count }, (_, i) => ({
     id: `proj${i}`,
     url: `C:\\projects\\repo${i}`,
@@ -169,7 +169,7 @@ export function createFormValuesMessage(
  * expect(msg.urls).to.deep.equal([{ id: 'proj1', url: 'C:\\projects\\repo1' }]);
  */
 export function createCheckGitHistoryMessage(
-  urls: Array<{ id: string; url: string }>
+  urls: UrlEntry[]
 ): WebviewMessage {
   return {
     command: 'checkGitHistory',
