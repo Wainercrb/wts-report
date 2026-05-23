@@ -1,11 +1,13 @@
 import Interactor from "./Interactor";
 
 const VsCodeStateChangeCallbacks = {
-  getDirectoryInfo: directoryInfo => {}
+  getDirectoryInfo: directoryInfo => {},
+  onModelInfo: modelInfo => {}
 }
 
 const VsCodeStateChangeBuffer = {
-  directoryInfo: ""
+  directoryInfo: "",
+  modelInfo: null
 }
 
 window.addEventListener('message', event => {
@@ -15,6 +17,10 @@ window.addEventListener('message', event => {
     case 'getDirectoryInfo':
       VsCodeStateChangeBuffer.directoryInfo += message.directoryInfo;
       VsCodeStateChangeCallbacks.getDirectoryInfo(VsCodeStateChangeBuffer.directoryInfo);
+    break;
+    case 'modelInfo':
+      VsCodeStateChangeBuffer.modelInfo = message.modelInfo;
+      VsCodeStateChangeCallbacks.onModelInfo(message.modelInfo);
     break;
   }
 });
@@ -42,6 +48,11 @@ function createFromVsCodeApi(vscode) {
     VsCodeStateChangeCallbacks.getDirectoryInfo = callback;
     VsCodeStateChangeBuffer.directoryInfo = "";
     vscode.postMessage({ command: 'getDirectoryInfo' });
+  }
+
+  Interactor.requestModelInfo = callback => {
+    VsCodeStateChangeCallbacks.onModelInfo = callback;
+    vscode.postMessage({ command: 'getModelInfo' });
   }
 
   return Interactor;

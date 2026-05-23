@@ -69,7 +69,7 @@ export function ManualTab({
 
   return (
     <>
-      <section className="w-full bg-white border border-gray-100 rounded-lg p-6 mb-4">
+      <section className="w-full bg-white border border-gray-100 rounded-lg p-6">
         {/* 1. Sub-tabs: Meeting/Tasks segmented control */}
         <div className="mb-3">
           <div className="bg-gray-100 p-0.5 rounded-lg flex relative">
@@ -158,16 +158,14 @@ export function ManualTab({
       )}
 
       {/* 7. Finish button */}
-      <div className="mt-4 mb-6">
-        <button
-          onClick={onFinish}
-          disabled={loading || (addedItems.length === 0 && checkedStoredItems.size === 0)}
-          className="w-full h-10 rounded px-3 py-2 text-sm font-medium flex items-center justify-center gap-2 bg-gray-900 text-white cursor-pointer hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
-        >
-          <CheckCircleIcon className="h-6 w-6" />
-          Finish
-        </button>
-      </div>
+      <button
+        onClick={onFinish}
+        disabled={loading || (addedItems.length === 0 && checkedStoredItems.size === 0)}
+        className="w-full h-10 rounded px-3 py-2 text-sm font-medium flex items-center justify-center gap-2 bg-gray-900 text-white cursor-pointer hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+      >
+        <CheckCircleIcon className="h-6 w-6" />
+        Finish
+      </button>
 
       {/* 8. Result Summary */}
       {result && (

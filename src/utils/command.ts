@@ -1,18 +1,11 @@
 import { spawn } from 'child_process';
 
-/**
- * Execute a shell command and return output as a promise
- * @param command - Command to execute (e.g., 'git', 'cmd.exe')
- * @param args - Arguments array for the command
- * @param cwd - Current working directory (optional)
- * @returns Promise with stdout output, or error message on failure
- */
 export async function executeCommand(
   command: string,
   args: string[],
   cwd?: string
 ): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const cp = spawn(command, args, { 
       cwd, 
       windowsHide: true 
@@ -30,16 +23,14 @@ export async function executeCommand(
     });
 
     cp.on('close', (code: number) => {
-      if (code !== 0 && errorOutput) {
-        resolve(errorOutput);
+      if (code !== 0) {
+        reject(new Error(errorOutput || `Command failed with exit code ${code}`));
       } else {
         resolve(output);
       }
     });
 
-    cp.on('error', (error: Error) => {
-      resolve(error.message);
-    });
+    cp.on('error', reject);
   });
 }
 

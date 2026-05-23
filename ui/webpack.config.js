@@ -6,6 +6,7 @@ const htmlWebpackPlugin = new HtmlWebPackPlugin({
 });
 
 module.exports = {
+  mode: "development",
   module: {
     rules: [
       {

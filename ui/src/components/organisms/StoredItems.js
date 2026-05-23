@@ -96,9 +96,9 @@ export function StoredItems({ items = [], onToggleCheck, onDelete, onRemoveAll }
   }
   
   return (
-    <section className="w-full mb-2">
+    <section className="w-full">
       {/* Header with icon */}
-      <div className="px-4 py-2.5 mb-2 flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-4">
         <h3 className="text-sm font-semibold text-gray-900 m-0">Stored Items</h3>
       </div>
       

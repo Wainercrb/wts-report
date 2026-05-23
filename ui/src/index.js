@@ -6,6 +6,7 @@ import InteractorFactory from './Interaction/InteractorFactory';
 // Import components
 import { ManualTab } from './components/templates/ManualTab';
 import { AutomaticTab } from './components/templates/AutomaticTab';
+import { ModelSelector } from './components/molecules/ModelSelector';
 
 console.log('Index.js loading...', React, ReactDOM);
 const Interactor = InteractorFactory.create();
@@ -317,8 +318,13 @@ function Index() {
         </button>
       </nav>
 
+      {/* Model Selector */}
+      <div className="px-4">
+        <ModelSelector />
+      </div>
+
       {/* Content container */}
-      <div className="pt-6 flex flex-col gap-4 px-4">
+      <div className="flex flex-col gap-4 px-4">
         {activeTab === 'Manual' && (
           <ManualTab
             currentItem={currentItem}

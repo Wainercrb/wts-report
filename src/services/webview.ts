@@ -31,12 +31,12 @@ export class WebviewManager implements IWebviewManager {
    * Post a message to the webview
    */
   postMessage(message: Record<string, unknown>): void {
-    try {
-      if (this.panel && this.panel.webview) {
+    if (this.panel?.webview) {
+      try {
         this.panel.webview.postMessage(message);
+      } catch {
+        // Panel may have been disposed; fail silently
       }
-    } catch (error) {
-      console.error('Error posting message to webview:', error);
     }
   }
 

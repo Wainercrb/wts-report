@@ -91,9 +91,9 @@ export function AddedItems({ items = [], onSave, onDelete, onRemoveAll }) {
   }
 
   return (
-    <section className="w-full mb-2">
+    <section className="w-full">
       {/* Header with icon */}
-      <div className="px-6 py-4 mb-2 flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-4">
         <h3 className="text-sm font-semibold text-gray-900 m-0">Added Items</h3>
       </div>
 

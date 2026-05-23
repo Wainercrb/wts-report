@@ -7,108 +7,247 @@ import { getTimesheetPrompt, getWorkLogPrompt } from '../prompts';
  * Service for interacting with LLM (Language Model) APIs
  */
 export class LLMService implements ILLMService {
-  private debugLog: (lines: string[]) => void = () => {};
-  private webviewManager: IWebviewManager | undefined;
+  private static readonly NO_CHANGES_MSG = 'No git changes found for today';
+  private static readonly EMPTY_RESPONSE_MSG = '(empty response from LLM)';
+  private static readonly NO_MODEL_MSG = 'No suitable LLM model available. Please ensure VS Code has an LLM extension installed.';
 
-  constructor(debugLogFn?: (lines: string[]) => void, webviewManager?: IWebviewManager) {
-    if (debugLogFn) {
-      this.debugLog = debugLogFn;
-    }
-    if (webviewManager) {
-      this.webviewManager = webviewManager;
-    }
-  }
+  constructor(
+    private debugLog: (lines: string[]) => void = () => {},
+    private webviewManager?: IWebviewManager
+  ) {}
 
-  /**
-   * Format git changes into a professional timesheet
-   */
   async formatGitChangesAsTimesheet(gitChanges: GitChange[]): Promise<string> {
     if (gitChanges.length === 0) {
-      return 'No git changes found for today';
+      return LLMService.NO_CHANGES_MSG;
     }
 
     try {
-      // Format changes for display
       const formattedChanges = gitChanges
         .map((change) => `[${change.branch}][${change.project}]${change.changes}`)
         .join('\n\n');
 
       const today = getFormattedDate();
-      const PROMPT = getTimesheetPrompt(today);
+      const prompt = getTimesheetPrompt(today);
+      const chatModel = await this.getAvailableChatModel();
 
-      const chatModel = await vscode.lm.selectChatModels({ family: 'gpt-4o' });
-      if (!chatModel || chatModel.length === 0) {
-        this.debugLog(['formatGitChangesAsTimesheet: No gpt-4o model available']);
+      if (!chatModel) {
+        this.postResult('gitHistoryResult', formattedChanges);
         return formattedChanges;
       }
 
       const messages = [
-        vscode.LanguageModelChatMessage.User(PROMPT),
+        vscode.LanguageModelChatMessage.User(prompt),
         vscode.LanguageModelChatMessage.User(`Git commits by ticket:\n${formattedChanges}`)
       ];
 
-      const chatRequest = await chatModel[0].sendRequest(messages, undefined, undefined);
-
-      let fullText = '';
-      for await (const chunk of chatRequest.text) {
-        fullText += String(chunk);
-      }
-
-      this.debugLog(['formatGitChangesAsTimesheet: LLM completed successfully']);
-      return fullText;
+      const result = await this.executeQuery(messages);
+      this.postResult('gitHistoryResult', result);
+      return result;
     } catch (err) {
-      this.debugLog([`formatGitChangesAsTimesheet error: ${err}`]);
+      const errorMsg = `Error formatting timesheet: ${err instanceof Error ? err.message : String(err)}`;
+      this.debugLog([`ERROR: ${errorMsg}`]);
+      this.postResult('gitHistoryResult', `Error: ${errorMsg}`);
       return 'Error formatting timesheet';
     }
   }
 
-  /**
-   * Run a query against the LLM
-   */
   async runQuery(
     userQuery: string,
     response?: { markdown?: (text: string) => void },
     token?: vscode.CancellationToken
   ): Promise<void> {
     try {
-      this.debugLog(['=== LLM checking (command) received query ===', String(userQuery)]);
-
-      const chatModel = await vscode.lm.selectChatModels({ family: 'gpt-4o' });
-      if (!chatModel || chatModel.length === 0) {
-        this.debugLog(['No gpt-4o family chat model available']);
+      const chatModel = await this.getAvailableChatModel();
+      if (!chatModel) {
+        this.debugLog([`ERROR: ${LLMService.NO_MODEL_MSG}`]);
+        this.postResult('llmResult', `Error: ${LLMService.NO_MODEL_MSG}`);
         return;
       }
 
       const today = getFormattedDate();
-      const PROMPT = getWorkLogPrompt(today);
-
+      const prompt = getWorkLogPrompt(today);
       const messages = [
-        vscode.LanguageModelChatMessage.User(PROMPT),
+        vscode.LanguageModelChatMessage.User(prompt),
         vscode.LanguageModelChatMessage.User(`json array: ${userQuery}`),
       ];
 
-      const chatRequest = await chatModel[0].sendRequest(messages, undefined, token);
-
-      let fullText = '';
-      for await (const chunk of chatRequest.text) {
-        fullText += String(chunk);
+      const result = await this.executeQuery(messages, token);
+      if (response?.markdown) {
+        response.markdown(result);
       }
-
-      if (response && typeof response.markdown === 'function') {
-        response.markdown(fullText);
-      }
-      this.debugLog([fullText]);
-      
-      // Send result back to webview if available
-      if (this.webviewManager) {
-        this.webviewManager.postMessage({
-          command: 'llmResult',
-          result: fullText
-        });
-      }
+      this.postResult('llmResult', result);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.debugLog(['runQuery error: ' + msg]);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      this.debugLog([`ERROR: runQuery - ${errorMsg}`]);
+      this.postResult('llmResult', `Error: ${errorMsg}`);
+    }
+  }
+
+  private async getAvailableChatModel(): Promise<vscode.LanguageModelChat | undefined> {
+    try {
+      const freeModel = await this.findFreeModel();
+      return freeModel || this.getFallbackModel();
+    } catch (err) {
+      this.debugLog([`ERROR: getAvailableChatModel - ${err}`]);
+      return undefined;
+    }
+  }
+
+  private async findFreeModel(): Promise<vscode.LanguageModelChat | undefined> {
+    try {
+      const allModels = await vscode.lm.selectChatModels({});
+      if (!allModels?.length) {
+        return undefined;
+      }
+
+      const freeModels = allModels.filter(model => this.getPricingValue(model) === 0);
+      if (!freeModels.length) {
+        return undefined;
+      }
+
+      const bestFreeModel = freeModels.reduce((best, current) =>
+        this.getMaxInputTokens(current) > this.getMaxInputTokens(best) ? current : best
+      );
+
+      return this.getFreshModelInstance(bestFreeModel);
+    } catch (err) {
+      this.debugLog([`ERROR: findFreeModel - ${err}`]);
+      return undefined;
+    }
+  }
+
+  private async getFallbackModel(): Promise<vscode.LanguageModelChat | undefined> {
+    try {
+      const allModels = await vscode.lm.selectChatModels({});
+      if (!allModels?.length) {
+        return undefined;
+      }
+
+      const sorted = allModels.sort((a, b) => {
+        const valueA = this.getPricingValue(a);
+        const valueB = this.getPricingValue(b);
+        return valueA === valueB
+          ? this.getMaxInputTokens(b) - this.getMaxInputTokens(a)
+          : valueA - valueB;
+      });
+
+      return this.getFreshModelInstance(sorted[0]);
+    } catch (err) {
+      this.debugLog([`ERROR: getFallbackModel - ${err}`]);
+      return undefined;
+    }
+  }
+
+  private async executeQuery(
+    messages: vscode.LanguageModelChatMessage[],
+    token?: vscode.CancellationToken
+  ): Promise<string> {
+    const chatModel = await this.getAvailableChatModel();
+    if (!chatModel) {
+      throw new Error('No model available for query execution');
+    }
+
+    const chatRequest = await chatModel.sendRequest(messages, undefined, token);
+    let result = '';
+    
+    for await (const chunk of chatRequest.text) {
+      result += String(chunk);
+    }
+    
+    return result || LLMService.EMPTY_RESPONSE_MSG;
+  }
+
+  private postResult(command: string, result: string): void {
+    if (this.webviewManager) {
+      this.webviewManager.postMessage({ command, result });
+    }
+  }
+
+  private getPricingValue(model: vscode.LanguageModelChat): number {
+    const metadata = model as { pricing?: string };
+    const pricing = metadata.pricing || '';
+    const match = pricing.match(/^([\d.]+)x$/);
+    return match ? parseFloat(match[1]) : Infinity;
+  }
+
+  private getMaxInputTokens(model: vscode.LanguageModelChat): number {
+    const metadata = model as { maxInputTokens?: number };
+    return metadata.maxInputTokens || 0;
+  }
+
+  private async getFreshModelInstance(
+    model: vscode.LanguageModelChat
+  ): Promise<vscode.LanguageModelChat | undefined> {
+    try {
+      const freshModels = await vscode.lm.selectChatModels({ family: model.family });
+      return freshModels?.[0];
+    } catch (err) {
+      this.debugLog([`ERROR: getFreshModelInstance - ${err}`]);
+      return undefined;
+    }
+  }
+
+  async getAvailableModelsInfo(): Promise<
+    Array<{ id: string; name: string; pricing: string; isFree: boolean; vendor: string; maxTokens: number }>
+  > {
+    try {
+      const allModels = await vscode.lm.selectChatModels({});
+      if (!allModels?.length) {
+        return [];
+      }
+
+      return allModels.map(model => {
+        const pricingValue = this.getPricingValue(model);
+        const metadata = model as { pricing?: string };
+        return {
+          id: model.id,
+          name: model.name || model.id,
+          pricing: metadata.pricing || 'unknown',
+          isFree: pricingValue === 0,
+          vendor: model.vendor,
+          maxTokens: this.getMaxInputTokens(model)
+        };
+      });
+    } catch (err) {
+      this.debugLog([`ERROR: getAvailableModelsInfo - ${err}`]);
+      return [];
+    }
+  }
+
+  async getSelectedModelInfo(): Promise<{
+    selectedModel: { id: string; name: string; pricing: string; isFree: boolean; vendor: string; maxTokens: number } | null;
+    availableModels: Array<{ id: string; name: string; pricing: string; isFree: boolean; vendor: string; maxTokens: number }>;
+    isFreeModel: boolean;
+    freeModelNotFound: boolean;
+  }> {
+    try {
+      const availableModels = await this.getAvailableModelsInfo();
+      const selectedModel = await this.getAvailableChatModel();
+
+      if (!selectedModel) {
+        return {
+          selectedModel: null,
+          availableModels,
+          isFreeModel: false,
+          freeModelNotFound: true
+        };
+      }
+
+      const selectedModelInfo = availableModels.find(m => m.id === selectedModel.id) || null;
+      return {
+        selectedModel: selectedModelInfo,
+        availableModels,
+        isFreeModel: selectedModelInfo?.isFree || false,
+        freeModelNotFound: false
+      };
+    } catch (err) {
+      this.debugLog([`ERROR: getSelectedModelInfo - ${err}`]);
+      return {
+        selectedModel: null,
+        availableModels: [],
+        isFreeModel: false,
+        freeModelNotFound: true
+      };
     }
   }
 }

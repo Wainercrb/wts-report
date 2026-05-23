@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { WebviewMessage, IWebviewManager, ICommandExecutor, ILLMService, ILogger } from '../types';
+import { WebviewMessage, IWebviewManager, ILLMService, ILogger } from '../types';
 import { listDirectory } from '../utils/command';
 import { getGitHistoryForUrls } from '../utils/git';
 
@@ -13,10 +13,7 @@ export class MessageHandler {
     private logger: ILogger
   ) {}
 
-  /**
-   * Main handler for all webview messages
-   */
-  handle(message: unknown): void {
+  async handle(message: unknown): Promise<void> {
     if (!this.isWebviewMessage(message)) {
       return;
     }
@@ -28,13 +25,16 @@ export class MessageHandler {
         this.handleShowInfo(webMessage);
         break;
       case 'getDirectoryInfo':
-        this.handleGetDirectoryInfo();
+        await this.handleGetDirectoryInfo();
         break;
       case 'checkGitHistory':
-        this.handleCheckGitHistory(webMessage);
+        await this.handleCheckGitHistory(webMessage);
         break;
       case 'formValues':
-        this.handleFormValues(webMessage);
+        await this.handleFormValues(webMessage);
+        break;
+      case 'getModelInfo':
+        await this.handleGetModelInfo();
         break;
       default:
         this.logger.log([`Unknown command: ${webMessage.command}`]);
@@ -62,21 +62,16 @@ export class MessageHandler {
 
   private async handleCheckGitHistory(message: WebviewMessage): Promise<void> {
     try {
-      const urls = message.urls as unknown;
-      if (!Array.isArray(urls)) {
+      const urls = this.extractUrls(message.urls);
+      if (!urls) {
         vscode.window.showErrorMessage('No URLs data received');
         return;
       }
 
-      // Process git history and format with LLM
-      const gitChanges = await getGitHistoryForUrls(
-        urls as Array<{ id: string; url: string }>
-      );
-      
-      this.logger.log([`Got ${gitChanges.length} git change(s), sending to LLM`]);
+      const gitChanges = await getGitHistoryForUrls(urls);
+      this.logger.log([`Processing ${gitChanges.length} git change(s)`]);
       
       const timesheet = await this.llmService.formatGitChangesAsTimesheet(gitChanges);
-      
       this.webviewManager.postMessage({
         command: 'gitHistoryResult',
         result: timesheet
@@ -84,7 +79,6 @@ export class MessageHandler {
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       this.logger.log([`Error processing git history: ${errorMsg}`]);
-      
       this.webviewManager.postMessage({
         command: 'gitHistoryResult',
         result: `Error: ${errorMsg}`
@@ -97,16 +91,8 @@ export class MessageHandler {
     vscode.window.showInformationMessage('Processing form submission...');
 
     try {
-      this.logger.log(['Form values received from webview:']);
-      this.logger.log([JSON.stringify(vals, null, 2)]);
-    } catch {
-      this.logger.log([String(vals)]);
-    }
-
-    try {
+      this.logger.log(['Form values received from webview:', JSON.stringify(vals, null, 2)]);
       await this.llmService.runQuery(JSON.stringify(vals));
-      
-      // Show success feedback
       vscode.window.showInformationMessage('Form processed successfully! Check the output for results.');
       this.logger.log(['Form processing completed']);
     } catch (e) {
@@ -116,11 +102,39 @@ export class MessageHandler {
     }
   }
 
+  private async handleGetModelInfo(): Promise<void> {
+    try {
+      const modelInfo = await this.llmService.getSelectedModelInfo();
+      this.webviewManager.postMessage({
+        command: 'modelInfo',
+        modelInfo
+      });
+    } catch (error) {
+      this.logger.log([`Error getting model info: ${error}`]);
+      this.webviewManager.postMessage({
+        command: 'modelInfo',
+        modelInfo: {
+          selectedModel: null,
+          availableModels: [],
+          isFreeModel: false,
+          freeModelNotFound: true
+        }
+      });
+    }
+  }
+
   private isWebviewMessage(obj: unknown): obj is WebviewMessage {
     return (
       typeof obj === 'object' &&
       obj !== null &&
       typeof (obj as Record<string, unknown>).command === 'string'
     );
+  }
+
+  private extractUrls(data: unknown): Array<{ id: string; url: string }> | null {
+    if (!Array.isArray(data)) {
+      return null;
+    }
+    return data as Array<{ id: string; url: string }>;
   }
 }

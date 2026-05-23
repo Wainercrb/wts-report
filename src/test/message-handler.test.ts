@@ -70,6 +70,13 @@ suite('handlers/message-handler.ts', () => {
     mockLLMService = {
       runQuery: sandbox.stub().resolves(),
       formatGitChangesAsTimesheet: sandbox.stub().resolves('Formatted timesheet'),
+      getAvailableModelsInfo: sandbox.stub().resolves([]),
+      getSelectedModelInfo: sandbox.stub().resolves({
+        selectedModel: null,
+        availableModels: [],
+        isFreeModel: false,
+        freeModelNotFound: true
+      }),
     };
 
     // Mock Logger
