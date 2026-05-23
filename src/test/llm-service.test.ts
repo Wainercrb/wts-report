@@ -218,7 +218,7 @@ suite('services/llm-service.ts', () => {
 
       assert.ok(vscode.LanguageModelChatMessage.User.calledTwice);
       const firstCall = vscode.LanguageModelChatMessage.User.getCall(0);
-      assert.ok(firstCall.args[0].includes('format'));
+      assert.ok(firstCall.args[0].includes('timesheet'));
     });
 
     test('should handle multiline commit messages', async () => {
@@ -273,6 +273,69 @@ suite('services/llm-service.ts', () => {
 
       await service.formatGitChangesAsTimesheet(gitChanges);
       assert.ok(mockDebugLog.calledWithMatch(['formatGitChangesAsTimesheet: LLM completed successfully']));
+    });
+
+    // ==========================================
+    //  Stored Items Tests
+    // ==========================================
+
+    test('should add third User message when storedItems present', async () => {
+      const gitChanges = createGitChangeArray(1);
+      const storedItems = [
+        { tsType: 'meeting', tsText: 'Sprint planning' },
+        { tsType: 'tasks', tsText: 'Code review PR #42' },
+      ];
+      const mockModel = {
+        id: 'gpt-4o',
+        sendRequest: sandbox.stub().resolves({
+          text: createMockStreamResponse('merged response'),
+        }),
+      };
+      vscode.lm.selectChatModels.resolves([mockModel]);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
+
+      await service.formatGitChangesAsTimesheet(gitChanges, storedItems);
+
+      assert.strictEqual(vscode.LanguageModelChatMessage.User.callCount, 3);
+      const thirdCall = vscode.LanguageModelChatMessage.User.getCall(2);
+      assert.ok(thirdCall.args[0].includes('manually entered work log items'));
+      assert.ok(thirdCall.args[0].includes('[meeting] Sprint planning'));
+      assert.ok(thirdCall.args[0].includes('[tasks] Code review PR #42'));
+    });
+
+    test('should NOT add third User message when storedItems empty', async () => {
+      const gitChanges = createGitChangeArray(1);
+      const mockModel = {
+        id: 'gpt-4o',
+        sendRequest: sandbox.stub().resolves({
+          text: createMockStreamResponse('response'),
+        }),
+      };
+      vscode.lm.selectChatModels.resolves([mockModel]);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
+
+      await service.formatGitChangesAsTimesheet(gitChanges, []);
+
+      assert.ok(vscode.LanguageModelChatMessage.User.calledTwice);
+    });
+
+    test('should NOT add third User message when storedItems absent', async () => {
+      const gitChanges = createGitChangeArray(1);
+      const mockModel = {
+        id: 'gpt-4o',
+        sendRequest: sandbox.stub().resolves({
+          text: createMockStreamResponse('response'),
+        }),
+      };
+      vscode.lm.selectChatModels.resolves([mockModel]);
+      const provider = createModelProvider(mockDebugLog);
+      const service = new LLMService(provider, mockDebugLog);
+
+      await service.formatGitChangesAsTimesheet(gitChanges);
+
+      assert.ok(vscode.LanguageModelChatMessage.User.calledTwice);
     });
   });
 
