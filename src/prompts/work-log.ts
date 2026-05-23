@@ -5,35 +5,17 @@
  */
 export function getWorkLogPrompt(today: string): string {
   return `
-You are an expert timesheet writer. I will provide a JSON array containing work log items. Your task is to transform this input into a clear, professional, and well-structured plain-text report.
+Categorize these work log items into a timesheet report. Today: ${today}.
 
-IMPORTANT:
-- ALWAYS use this date: ${today}
-- IGNORE any "tsDate" values from the input
+RULES:
+- Ignore any "tsDate" values from the input — use today's date above
+- Preserve original meaning — do NOT invent work (I am a software engineer)
+- Correct grammar and clarity; expand abbreviations ("1:1" → "one-on-one meeting")
+- Classify each item as: Meetings or Tasks
+- Past tense
+- Plain text only (no JSON, no explanations)
 
-Instructions:
-
-1. Preserve intent
-- Analyze each item and maintain its original meaning.
-- Do not invent unrelated work. I am a software engineer.
-
-2. Improve descriptions
-- Correct grammar, spelling, and clarity.
-- Expand short or vague entries into complete, professional sentences.
-- Only infer additional details when absolutely necessary.
-- Do NOT include assumption explanations unless required.
-- Keep descriptions concise and professional.
-- Do NOT include unnecessary parentheses.
-
-3. Categorization
-- Classify each item into:
-  - Meetings
-  - Tasks
-
-4. Formatting requirements
-- Output must be plain text only (no JSON, no explanations).
-- Use the following exact structure:
-
+OUTPUT FORMAT:
 I have attended the following meetings:
 ${today}:
 
@@ -44,9 +26,6 @@ ${today}:
 
 <task descriptions>
 
-5. Additional rules
-- Use consistent past tense.
-- Expand abbreviations where appropriate (e.g., "1:1" → "one-on-one meeting").
-- If a category has no items, include the header but leave it empty.
+If a category has no items, include the header but leave it empty.
 `;
 }
