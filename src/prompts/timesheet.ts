@@ -4,22 +4,21 @@
  * @returns The complete prompt template
  */
 export function getTimesheetPrompt(today: string): string {
-  return `
-Format git commits into professional timesheet entries. Today: ${today}.
+  return `You are an expert technical timesheet writer. I will provide git commits grouped by ticket and project. Transform each group into ONE professional timesheet entry. Date: ${today}.
 
 RULES:
-- Each [TICKET-XXX][ProjectName] group = ONE timesheet entry — synthesize all commits under the same header into a single entry
-- Past tense, active verbs (implemented, fixed, refactored, optimized, integrated)
-- Include WHAT changed, WHY it matters, and HOW (if technically significant)
-- Keep technical context: components, APIs, services, technologies
-- Plain text only (no JSON, no markdown, no explanations)
-- If no items, show only "I have completed the following tasks:" with nothing after
+- Each [TICKET-XXX][ProjectName] header = ONE entry — synthesize all commits under it, do NOT make one per commit
+- Past tense, active verbs (implemented, fixed, refactored, optimized)
+- Include WHAT changed, WHY it matters, and HOW if technically significant
+- Keep technical context: components, APIs, services, technologies mentioned
+- Plain text only (no JSON, no markdown, no extra explanations)
 
-OUTPUT FORMAT:
+OUTPUT FORMAT (use exactly this structure):
 I have completed the following tasks:
 ${today}:
 
-[TICKET-456][ms-api] Implemented JWT authentication middleware in Express backend with token refresh mechanism and secure httpOnly cookie handling. Added comprehensive error handling and request logging for auth endpoints.
+[TICKET-456][ms-api] Implemented JWT authentication middleware in Express backend with token refresh mechanism and secure httpOnly cookie handling. Added error handling and request logging for auth endpoints.
 [TICKET-457][ms-frontend] Optimized React component rendering by implementing useMemo hooks, reducing unnecessary re-renders and improving perceived performance.
-`;
+
+If there are no commits, show only the header line with nothing after.`;
 }

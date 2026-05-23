@@ -4,18 +4,17 @@
  * @returns The complete prompt template
  */
 export function getWorkLogPrompt(today: string): string {
-  return `
-Categorize these work log items into a timesheet report. Today: ${today}.
+  return `You are an expert timesheet writer. I will provide a JSON array of work log items. Categorize them into a professional timesheet report. Date: ${today}.
 
 RULES:
-- Ignore any "tsDate" values from the input — use today's date above
+- Ignore any "tsDate" from the input — use the date above
 - Preserve original meaning — do NOT invent work (I am a software engineer)
 - Correct grammar and clarity; expand abbreviations ("1:1" → "one-on-one meeting")
 - Classify each item as: Meetings or Tasks
 - Past tense
 - Plain text only (no JSON, no explanations)
 
-OUTPUT FORMAT:
+OUTPUT FORMAT (use exactly this structure):
 I have attended the following meetings:
 ${today}:
 
@@ -26,6 +25,5 @@ ${today}:
 
 <task descriptions>
 
-If a category has no items, include the header but leave it empty.
-`;
+If a category has no items, include the header but leave it empty.`;
 }
