@@ -1,52 +1,107 @@
 # WTS Report — VS Code Extension
 
-WTS Report is a small VS Code extension that opens a React-based webview to collect and send timesheet-like items to the extension host.
+WTS Report is a VS Code extension that opens a React-based webview to collect git changes and send timesheet-like reports to the extension host.
 
-## Development (quick)
+## Prerequisites
 
-1. Build the UI and install dependencies:
+- **Node.js** >= 18
+- **pnpm** >= 9 ([install](https://pnpm.io/installation))
+
+```powershell
+# Verify
+node --version
+pnpm --version
+```
+
+## Quick setup
+
+Install dependencies for both the extension and the UI **in a single command**:
+
+```powershell
+pnpm install
+cd ui && pnpm install && cd ..
+```
+
+> The root `.npmrc` uses `shamefully-hoist=true` so the VS Code extension host can resolve runtime dependencies like `mocha` and `glob`.
+
+## Run the extension in VS Code (development)
+
+1. **Build the UI** and compile the extension:
+
+```powershell
+pnpm run compile
+```
+
+This runs `tsc` + copies the UI bundle into `out/`.
+
+2. **Launch the Extension Development Host**:
+
+   - Open the project in VS Code and press `F5`.
+   - In the new window, open the Command Palette (`Ctrl+Shift+P`) and run **WTS Report** (or `extension.startExtension`).
+
+3. **Iterate**:
+
+   - Extension code: edit `.ts` files → re-run `pnpm run compile` → reload in the dev host.
+   - UI code: edit files in `ui/src/` → rebuild with `cd ui && pnpm run build` → re-run `pnpm run compile`.
+
+## Run the UI standalone (browser)
+
+The UI is a React app powered by webpack-dev-server. Useful for rapid UI iteration without reloading the extension host.
 
 ```powershell
 cd ui
-npm install --legacy-peer-deps
-npm run build
+pnpm install
+pnpm start:dev
 ```
 
-2. Compile the extension and copy the UI bundle into `out/`:
+This opens `http://localhost:8080` with Hot Module Replacement. Note that VS Code APIs (`acquireVsCodeApi`) are **not available** in the browser — some features will be stubbed.
+
+## Generate the VSIX installer
+
+Package the extension into a `.vsix` file for installation into your normal VS Code:
 
 ```powershell
-cd ..
-npm run compile
+pnpm vsce package
 ```
 
-3. Run the extension in the Extension Development Host:
+This runs the `vscode:prepublish` script (compile + UI build) and produces `wts-report-<version>.vsix`.
 
-- Open the project in VS Code and press `F5`.
-- In the Extension Development Host window open Command Palette and run `WTS Report` (or `extension.startExtension`).
-
-## Packaging (.vsix)
-
-Create a package file and install it into your normal VS Code:
+To install directly:
 
 ```powershell
-cd ui && npm run build
-cd ..
-npx vsce package
-code --install-extension wts-report-0.0.1.vsix
+code --install-extension wts-report-0.0.5.vsix
 ```
+
+> **Note**: The VSIX excludes `node_modules/`, `.at l/`, `pnpm-lock.yaml`, and `pnpm-workspace.yaml` via `.vscodeignore`.
+> License file is not bundled — a warning appears during packaging but is safe to ignore for local use.
 
 ## Troubleshooting
 
-- If the webview appears blank, confirm `out/index.html` and `out/main.js` exist (created by `npm run compile`).
-- Open Developer Tools in the Extension Host (Help → Toggle Developer Tools) while the webview is focused to inspect console/network errors.
-- To update the UI, run `cd ui && npm run build` and then `npm run compile`.
+- **Webview blank**: confirm `out/index.html` and `out/main.js` exist (created by `pnpm run compile`).
+- **`Cannot find module 'mocha'`**: run `pnpm install` from the root — `mocha` and `glob` are direct devDependencies hoisted to root by `shamefully-hoist=true`.
+- **Debug the webview**: with the webview focused, run **Help → Toggle Developer Tools** to inspect console/network errors.
+- **pnpm build scripts blocked**: if you see `ERR_PNPM_IGNORED_BUILDS`, run `pnpm approve-builds @vscode/vsce-sign keytar`.
+- **Update UI only**: `cd ui && pnpm run build && cd .. && pnpm run compile`.
 
 ## Useful commands
 
-- Build UI: `cd ui && npm run build`
-- Install UI deps: `cd ui && npm install --legacy-peer-deps`
-- Compile extension: `npm run compile`
-- Package: `npx vsce package`
+| Action | Command |
+|--------|---------|
+| Install all deps | `pnpm install && cd ui && pnpm install` |
+| Build UI | `cd ui && pnpm run build` |
+| UI dev server (browser) | `cd ui && pnpm start:dev` |
+| Compile extension | `pnpm run compile` |
+| Run tests | `pnpm test` |
+| Package VSIX | `pnpm vsce package` |
+| Install VSIX locally | `code --install-extension wts-report-*.vsix` |
+
+## Package manager
+
+This project uses **pnpm** with the following configuration:
+
+- `shamefully-hoist=true` — hoists direct dependencies to root for VS Code extension host compatibility
+- `confirm-modules-purge=false` — prevents interactive prompts in CI
+- `pnpm-workspace.yaml` — tracks approved build scripts (`@vscode/vsce-sign`, `keytar`)
 
 ---
 

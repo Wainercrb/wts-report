@@ -8,6 +8,8 @@ src/**
 .gitignore
 .yarnrc
 pnpm-lock.yaml
+pnpm-workspace.yaml
+.atl/
 webpack.config.js
 vsc-extension-quickstart.md
 **/tsconfig.json
