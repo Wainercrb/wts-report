@@ -10,7 +10,6 @@ export class ChatModelProvider {
   private modelCache: vscode.LanguageModelChat[] | null = null;
 
   constructor(
-    private debugLog: (lines: string[]) => void = () => {}
   ) {}
 
   /**
@@ -25,7 +24,7 @@ export class ChatModelProvider {
       this.modelCache = models || [];
       return this.modelCache;
     } catch (err) {
-      this.debugLog([`ERROR: getModels - ${err}`]);
+      // this.debugLog([`ERROR: getModels - ${err}`]);
       this.modelCache = [];
       return this.modelCache;
     }
@@ -39,7 +38,7 @@ export class ChatModelProvider {
       const freeModel = await this.findFreeModel();
       return freeModel || this.getFallbackModel();
     } catch (err) {
-      this.debugLog([`ERROR: getAvailableChatModel - ${err}`]);
+      // this.debugLog([`ERROR: getAvailableChatModel - ${err}`]);
       return undefined;
     }
   }
@@ -67,7 +66,7 @@ export class ChatModelProvider {
         };
       });
     } catch (err) {
-      this.debugLog([`ERROR: getAvailableModelsInfo - ${err}`]);
+      // this.debugLog([`ERROR: getAvailableModelsInfo - ${err}`]);
       return [];
     }
   }
@@ -102,7 +101,7 @@ export class ChatModelProvider {
         freeModelNotFound: false
       };
     } catch (err) {
-      this.debugLog([`ERROR: getSelectedModelInfo - ${err}`]);
+      // this.debugLog([`ERROR: getSelectedModelInfo - ${err}`]);
       return {
         selectedModel: null,
         availableModels: [],

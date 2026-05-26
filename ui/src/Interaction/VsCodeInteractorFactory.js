@@ -1,7 +1,7 @@
 import Interactor from "./Interactor";
+import { COMMANDS, CONFIG } from '../../../consts';
 
 const VsCodeStateChangeCallbacks = {
-  getDirectoryInfo: directoryInfo => {},
   onModelInfo: modelInfo => {}
 }
 
@@ -14,10 +14,6 @@ window.addEventListener('message', event => {
   const message = event.data;
 
   switch(message.command){
-    case 'getDirectoryInfo':
-      VsCodeStateChangeBuffer.directoryInfo += message.directoryInfo;
-      VsCodeStateChangeCallbacks.getDirectoryInfo(VsCodeStateChangeBuffer.directoryInfo);
-    break;
     case 'modelInfo':
       VsCodeStateChangeBuffer.modelInfo = message.modelInfo;
       VsCodeStateChangeCallbacks.onModelInfo(message.modelInfo);
@@ -28,32 +24,26 @@ window.addEventListener('message', event => {
 function createFromVsCodeApi(vscode) {
   Interactor.showInformationMessage = text =>
     vscode.postMessage({
-    command: 'showInformationMessage',
+    command: CONFIG.INFO_ALERT,
     text: text
   });
 
   Interactor.sendFormValues = values =>
     vscode.postMessage({
-      command: 'formValues',
+      command: COMMANDS.MANUAL_TIMESHEET_REPORT,
       values: values
     });
 
   Interactor.sendGitUrls = (urls, storedItems) =>
     vscode.postMessage({
-      command: 'checkGitHistory',
+      command: COMMANDS.AUTOMATIC_TIMESHEET_REPORT,
       urls: urls,
       ...(storedItems && storedItems.length > 0 ? { storedItems } : {})
     });
 
-  Interactor.getDirectoryInfo = callback => {
-    VsCodeStateChangeCallbacks.getDirectoryInfo = callback;
-    VsCodeStateChangeBuffer.directoryInfo = "";
-    vscode.postMessage({ command: 'getDirectoryInfo' });
-  }
-
   Interactor.requestModelInfo = callback => {
     VsCodeStateChangeCallbacks.onModelInfo = callback;
-    vscode.postMessage({ command: 'getModelInfo' });
+    vscode.postMessage({ command: COMMANDS.GET_AVAILABLE_MODELS });
   }
 
   return Interactor;

@@ -7,10 +7,12 @@ import InteractorFactory from './Interaction/InteractorFactory';
 import { ManualTab } from './components/templates/ManualTab';
 import { AutomaticTab } from './components/templates/AutomaticTab';
 import { ModelSelector } from './components/molecules/ModelSelector';
+import { COMMANDS } from "../../consts";
 
 console.log('Index.js loading...', React, ReactDOM);
 const Interactor = InteractorFactory.create();
 console.log('Interactor created:', Interactor);
+
 
 function Index() {
   console.log('Index component rendering');
@@ -66,11 +68,11 @@ function Index() {
       const msg = event.data;
       if (!msg || !msg.command) return;
 
-      if (msg.command === 'llmResult') {
+      if (msg.command === COMMANDS.MANUAL_TIMESHEET_REPORT) {
         setResult(msg.result || '');
         setLoading(false);
       }
-      if (msg.command === 'gitHistoryResult') {
+      if (msg.command === COMMANDS.AUTOMATIC_TIMESHEET_REPORT) {
         setGitResult(msg.result || '');
         setLoading(false);
       }

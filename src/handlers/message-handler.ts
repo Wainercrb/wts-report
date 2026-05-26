@@ -3,6 +3,7 @@ import { WebviewMessage, UrlEntry, StoredItem, IWebviewManager, ILLMService, ILo
 import { listDirectory } from '../utils/command';
 import { getGitHistoryForUrls } from '../utils/git';
 import { tryCatch } from '../utils/errors';
+import { COMMANDS, CONFIG } from '../../consts';
 
 /**
  * Handles messages from the webview and routes them to appropriate handlers
@@ -22,19 +23,16 @@ export class MessageHandler {
     const webMessage = message as WebviewMessage;
 
     switch (webMessage.command) {
-      case 'showInformationMessage':
+      case CONFIG.INFO_ALERT:
         this.handleShowInfo(webMessage);
         break;
-      case 'getDirectoryInfo':
-        await this.handleGetDirectoryInfo();
+      // case COMMANDS.AUTOMATIC_TIMESHEET_REPORT:
+      //   await this.handleCheckGitHistory(webMessage);
+      //   break;
+      case COMMANDS.MANUAL_TIMESHEET_REPORT:
+        await this.llmService.runManualTimeSheetReport(JSON.stringify(webMessage.values));
         break;
-      case 'checkGitHistory':
-        await this.handleCheckGitHistory(webMessage);
-        break;
-      case 'formValues':
-        await this.handleFormValues(webMessage);
-        break;
-      case 'getModelInfo':
+      case COMMANDS.GET_AVAILABLE_MODELS:
         await this.handleGetModelInfo();
         break;
       default:
@@ -42,101 +40,50 @@ export class MessageHandler {
     }
   }
 
-  private handleShowInfo(message: { command: 'showInformationMessage'; text: string }): void {
+  private handleShowInfo(message: { command: typeof CONFIG.INFO_ALERT; text: string }): void {
     if (message.text) {
       vscode.window.showInformationMessage(message.text);
     }
   }
 
-  private async handleGetDirectoryInfo(): Promise<void> {
-    const result = await tryCatch(
-      () => listDirectory(),
-      (lines: string[]) => this.logger.log(lines),
-      'getting directory info'
-    );
-    if (result.ok) {
-      this.webviewManager.postMessage({
-        command: 'getDirectoryInfo',
-        directoryInfo: result.value
-      });
-    }
-  }
+  // private async handleCheckGitHistory(message: { command: typeof COMMANDS.AUTOMATIC_TIMESHEET_REPORT; urls: UrlEntry[]; storedItems?: StoredItem[] }): Promise<void> {
+  //   const urls = this.extractUrls(message.urls);
+  //   if (!urls) {
+  //     vscode.window.showErrorMessage('No URLs data received');
+  //     return;
+  //   }
 
-  private async handleCheckGitHistory(message: { command: 'checkGitHistory'; urls: UrlEntry[]; storedItems?: StoredItem[] }): Promise<void> {
-    const urls = this.extractUrls(message.urls);
-    if (!urls) {
-      vscode.window.showErrorMessage('No URLs data received');
-      return;
-    }
+  //   const gitChangesResult = await tryCatch(
+  //     () => getGitHistoryForUrls(urls),
+  //     (lines: string[]) => this.logger.log(lines),
+  //     'getting git history'
+  //   );
+  //   if (!gitChangesResult.ok) {
+  //     this.webviewManager.postMessage({
+  //       command: 'gitHistoryResult',
+  //       result: `Error: ${gitChangesResult.error}`
+  //     });
+  //     return;
+  //   }
 
-    const gitChangesResult = await tryCatch(
-      () => getGitHistoryForUrls(urls),
-      (lines: string[]) => this.logger.log(lines),
-      'getting git history'
-    );
-    if (!gitChangesResult.ok) {
-      this.webviewManager.postMessage({
-        command: 'gitHistoryResult',
-        result: `Error: ${gitChangesResult.error}`
-      });
-      return;
-    }
-
-    const storedItems = Array.isArray(message.storedItems) ? message.storedItems : undefined;
-    this.logger.log([`Processing ${gitChangesResult.value.length} git change(s)`]);
-    if (storedItems && storedItems.length > 0) {
-      this.logger.log([`Including ${storedItems.length} stored item(s)`]);
-    }
-    const timesheet = await this.llmService.formatGitChangesAsTimesheet(gitChangesResult.value, storedItems);
-    this.webviewManager.postMessage({
-      command: 'gitHistoryResult',
-      result: timesheet
-    });
-  }
-
-  private async handleFormValues(message: { command: 'formValues'; values: Record<string, unknown> }): Promise<void> {
-    const vals = message.values;
-    vscode.window.showInformationMessage('Processing form submission...');
-    this.logger.log(['Form values received from webview:', JSON.stringify(vals, null, 2)]);
-
-    const result = await tryCatch(
-      () => this.llmService.runQuery(JSON.stringify(vals)),
-      (lines: string[]) => this.logger.log(lines),
-      'processing form'
-    );
-
-    if (result.ok) {
-      vscode.window.showInformationMessage('Form processed successfully! Check the output for results.');
-      this.logger.log(['Form processing completed']);
-    } else {
-      this.logger.log(['Failed to process form: ' + result.error]);
-      vscode.window.showErrorMessage('Failed to process form: ' + result.error);
-    }
-  }
+  //   const storedItems = Array.isArray(message.storedItems) ? message.storedItems : undefined;
+  //   this.logger.log([`Processing ${gitChangesResult.value.length} git change(s)`]);
+  //   if (storedItems && storedItems.length > 0) {
+  //     this.logger.log([`Including ${storedItems.length} stored item(s)`]);
+  //   }
+  //   const timesheet = await this.llmService.formatGitChangesAsTimesheet(gitChangesResult.value, storedItems);
+  //   this.webviewManager.postMessage({
+  //     command: 'gitHistoryResult',
+  //     result: timesheet
+  //   });
+  // }
 
   private async handleGetModelInfo(): Promise<void> {
-    const result = await tryCatch(
-      () => this.llmService.getSelectedModelInfo(),
-      (lines: string[]) => this.logger.log(lines),
-      'getting model info'
-    );
-
-    if (result.ok) {
-      this.webviewManager.postMessage({
-        command: 'modelInfo',
-        modelInfo: result.value
-      });
-    } else {
-      this.webviewManager.postMessage({
-        command: 'modelInfo',
-        modelInfo: {
-          selectedModel: null,
-          availableModels: [],
-          isFreeModel: false,
-          freeModelNotFound: true
-        }
-      });
-    }
+    const result = await this.llmService.getSelectedModelInfo();
+    // this.webviewManager.postMessage({
+    //   command: 'modelInfo',
+    //   modelInfo: result ?? []
+    // }); 
   }
 
   private isWebviewMessage(obj: unknown): obj is WebviewMessage {

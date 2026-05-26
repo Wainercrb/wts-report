@@ -1,76 +1,45 @@
-import * as vscode from 'vscode';
-import {
-  START_COMMAND_NAME,
-  LLM_CHECKING_COMMAND,
-  OUTPUT_CHANNEL_NAME
-} from './config';
-import { WebviewMessage, ILogger } from './types';
-import { ChatModelProvider } from './services/chat-model-provider';
-import { LLMService } from './services/llm-service';
-import { WebviewManager } from './services/webview';
-import { MessageHandler } from './handlers/message-handler';
-
-/**
- * Simple logger implementation using VS Code output channel
- */
-class Logger implements ILogger {
-  constructor(private outputChannel: vscode.OutputChannel) {}
-
-  log(lines: string[]): void {
-    for (const line of lines) {
-      this.outputChannel.appendLine(line);
-    }
-    if (String(process.env.DEBUG).toLowerCase() === 'true') {
-      this.outputChannel.show(true);
-    }
-  }
-}
+import * as vscode from "vscode";
+import { COMMANDS, START_COMMAND_NAME } from "../consts";
+import { ChatModelProvider } from "./services/chat-model-provider";
+import { LLMService } from "./services/llm-service";
+import { WebviewManager } from "./services/webview";
+import { MessageHandler } from "./handlers/message-handler";
+import { Logger } from "./services/Logger-service";
 
 export function activate(context: vscode.ExtensionContext): void {
-  const outputChannel = vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME);
-  const logger = new Logger(outputChannel);
-
+  const logger = new Logger();
   const webviewManager = new WebviewManager();
-  const chatModelProvider = new ChatModelProvider((lines: string[]) => logger.log(lines));
-  const llmService = new LLMService(
-    chatModelProvider,
-    (lines: string[]) => logger.log(lines),
-    (command: string, result: string) => webviewManager.postMessage({ command, result })
-  );
+  const chatModelProvider = new ChatModelProvider();
+  const llmService = new LLMService(chatModelProvider, webviewManager, logger);
   const messageHandler = new MessageHandler(webviewManager, llmService, logger);
 
-  context.subscriptions.push(outputChannel);
-
-  const startCommand = vscode.commands.registerCommand(START_COMMAND_NAME, () => {
-    webviewManager.createPanel(context);
-    webviewManager.registerMessageHandler(
-      (message: unknown) => {
-        messageHandler.handle(message).catch(err => {
-          logger.log([`Error handling message: ${err}`]);
-        });
-      },
-      context
-    );
-  });
+  const startCommand = vscode.commands.registerCommand(
+    START_COMMAND_NAME,
+    () => {
+      webviewManager.createPanel(context);
+      webviewManager.registerMessageHandler(messageHandler.handle, context);
+    },
+  );
   context.subscriptions.push(startCommand);
 
-  const llmCheckingCommand = vscode.commands.registerCommand(
-    LLM_CHECKING_COMMAND,
-    async (prompt: string) => {
-      await llmService.runQuery(String(prompt));
-    }
-  );
-  context.subscriptions.push(llmCheckingCommand);
+  // const manualTimesheetReportCommand = vscode.commands.registerCommand(
+  //   COMMANDS.MANUAL_TIMESHEET_REPORT,
+  //   () => {
+  //     webviewManager.createPanel(context);
+  //     webviewManager.registerMessageHandler(messageHandler.handle, context);
+  //   },
+  // );
+  // context.subscriptions.push(manualTimesheetReportCommand);
 
-  if (vscode.chat?.createChatParticipant) {
-    const chatParticipant = vscode.chat.createChatParticipant(
-      'llm-checking',
-      async (request, ctx, response, token) => {
-        await llmService.runQuery(request.prompt, response, token);
-      }
-    );
-    context.subscriptions.push(chatParticipant);
-  }
+  //   if (vscode.chat?.createChatParticipant) {
+  //     const chatParticipant = vscode.chat.createChatParticipant(
+  //       'llm-checking',
+  //       async (request, ctx, response, token) => {
+  //         await llmService.runManualTimeSheetReport(request.prompt, response, token);
+  //       }
+  //     );
+  //     context.subscriptions.push(chatParticipant);
+  //   }
 }
 
 /**

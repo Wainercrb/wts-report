@@ -52,7 +52,7 @@ export function ModelSelector() {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-4">
+    <div className="bg-white p-4 rounded-lg border mb-4">
       {/* Header with Title and Status Badge */}
       <div className="flex items-center justify-between mb-4">
         <label className="text-sm font-semibold text-gray-900">

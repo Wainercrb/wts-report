@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-
+import { COMMANDS, CONFIG } from './consts'
 /**
  * Result type for operations that may fail
  */
@@ -8,13 +8,15 @@ export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
 /**
  * Message sent from webview to extension
  * Discriminated union for type-safe command handling
+ * 
+ * NOTE: string literals used here, not CONFIG/COMMANDS values — 
+ * TypeScript treats CONFIG.INFO_ALERT as a namespace in type positions.
  */
 export type WebviewMessage =
-  | { command: 'showInformationMessage'; text: string }
-  | { command: 'getDirectoryInfo' }
-  | { command: 'checkGitHistory'; urls: UrlEntry[]; storedItems?: StoredItem[] }
-  | { command: 'formValues'; values: Record<string, unknown> }
-  | { command: 'getModelInfo' };
+  | { command: 'infoAlert'; text: string }
+  | { command: 'automaticTimesheetReport'; urls: UrlEntry[]; storedItems?: StoredItem[] }
+  | { command: 'manualTimesheetReport'; values: Record<string, unknown> }
+  | { command: 'getAvailableModels' };
 
 /**
  * A URL entry with an identifier, used for tracking selected git URLs from the UI
@@ -73,8 +75,8 @@ export interface ModelInfo {
  * LLM service interface
  */
 export interface ILLMService {
-  runQuery(query: string, response?: { markdown?: (text: string) => void }, token?: vscode.CancellationToken): Promise<void>;
-  formatGitChangesAsTimesheet(gitChanges: GitChange[], storedItems?: StoredItem[]): Promise<string>;
+  runManualTimeSheetReport(userQuery: string): Promise<string>;
+  runAutomaticTimeSheetReport(gitChanges: GitChange[], storedItems?: StoredItem[]): Promise<string>;
   getAvailableModelsInfo(): Promise<ModelInfo[]>;
   getSelectedModelInfo(): Promise<{
     selectedModel: ModelInfo | null;
