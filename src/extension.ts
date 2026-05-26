@@ -1,16 +1,16 @@
 import * as vscode from "vscode";
-import { COMMANDS, START_COMMAND_NAME } from "../consts";
+import { COMMANDS, START_COMMAND_NAME } from "./consts";
 import { ChatModelProvider } from "./services/chat-model-provider";
 import { LLMService } from "./services/llm-service";
 import { WebviewManager } from "./services/webview";
 import { MessageHandler } from "./handlers/message-handler";
-import { Logger } from "./services/Logger-service";
+import { Logger } from "./services/logger-service";
 
 export function activate(context: vscode.ExtensionContext): void {
   const logger = new Logger();
   const webviewManager = new WebviewManager();
   const chatModelProvider = new ChatModelProvider();
-  const llmService = new LLMService(chatModelProvider, webviewManager, logger);
+  const llmService = new LLMService(chatModelProvider, logger);
   const messageHandler = new MessageHandler(webviewManager, llmService, logger);
 
   const startCommand = vscode.commands.registerCommand(
