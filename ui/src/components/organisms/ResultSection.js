@@ -12,10 +12,6 @@ import { DocumentTextIcon } from '../../utils/IconMap';
  * @param {string} props.content - Result text/content
  */
 export function ResultSection({ title = 'Result Summary', content = '' }) {
-  if (!content) {
-    return null;
-  }
-
   return (
     <section className="w-full bg-white border border-gray-100 rounded-lg overflow-hidden mt-2 mb-4">
       {/* Header with icon */}

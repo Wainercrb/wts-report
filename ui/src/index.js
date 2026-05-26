@@ -64,14 +64,14 @@ function Index() {
   useEffect(() => {
     function handleMessage(event) {
       const msg = event.data;
-      if (!msg || !msg.command) return;
 
-      if (msg.command === 'llmResult') {
-        setResult(msg.result || '');
+      // llmResult, gitHistoryResult — no 'command' discriminator
+      if (msg.llmResult) {
+        setResult(msg.llmResult || '');
         setLoading(false);
       }
-      if (msg.command === 'gitHistoryResult') {
-        setGitResult(msg.result || '');
+      if (msg.gitHistoryResult) {
+        setGitResult(msg.gitHistoryResult || '');
         setLoading(false);
       }
     }

@@ -1,161 +1,61 @@
-import * as vscode from 'vscode';
-import { ModelInfo } from '../types';
+import * as vscode from "vscode";
+import { ExtendedModel, ILogger } from "../types";
 
 /**
- * Provides cached access to VS Code Language Model Chat models.
+ * Provides access to VS Code Language Model Chat models, sorted by price.
  * Extracted from LLMService to follow Single Responsibility Principle.
- * Caches selectChatModels() results to eliminate N+1 calls.
  */
 export class ChatModelProvider {
-  private modelCache: vscode.LanguageModelChat[] | null = null;
+  private selectedModelId: string | undefined;
 
-  constructor(
-    private debugLog: (lines: string[]) => void = () => {}
-  ) {}
+  constructor(private logger: ILogger) {}
 
   /**
-   * Get all available chat models, using cached result when available.
+   * Store the user's selected model ID for subsequent queries.
    */
-  private async getModels(): Promise<vscode.LanguageModelChat[]> {
-    if (this.modelCache) {
-      return this.modelCache;
-    }
-    try {
-      const models = await vscode.lm.selectChatModels({});
-      this.modelCache = models || [];
-      return this.modelCache;
-    } catch (err) {
-      this.debugLog([`ERROR: getModels - ${err}`]);
-      this.modelCache = [];
-      return this.modelCache;
-    }
+  setSelectedModelId(modelId: string): void {
+    this.selectedModelId = modelId;
+    this.logger.info(`User selected model: ${modelId}`);
   }
 
   /**
-   * Get the best available chat model (prefers free, falls back to cheapest).
+   * Get all available chat models, sorted by price ascending.
    */
-  async getAvailableChatModel(): Promise<vscode.LanguageModelChat | undefined> {
-    try {
-      const freeModel = await this.findFreeModel();
-      return freeModel || this.getFallbackModel();
-    } catch (err) {
-      this.debugLog([`ERROR: getAvailableChatModel - ${err}`]);
-      return undefined;
-    }
-  }
-
-  /**
-   * Get information about all available models.
-   */
-  async getAvailableModelsInfo(): Promise<ModelInfo[]> {
-    try {
-      const allModels = await this.getModels();
-      if (allModels.length === 0) {
-        return [];
-      }
-
-      return allModels.map(model => {
-        const pricingValue = this.getPricingValue(model);
-        const metadata = model as { pricing?: string };
-        return {
-          id: model.id,
-          name: model.name || model.id,
-          pricing: metadata.pricing || 'unknown',
-          isFree: pricingValue === 0,
-          vendor: model.vendor,
-          maxTokens: this.getMaxInputTokens(model)
-        };
-      });
-    } catch (err) {
-      this.debugLog([`ERROR: getAvailableModelsInfo - ${err}`]);
-      return [];
-    }
-  }
-
-  /**
-   * Get information about the selected model and all available models.
-   */
-  async getSelectedModelInfo(): Promise<{
-    selectedModel: ModelInfo | null;
-    availableModels: ModelInfo[];
-    isFreeModel: boolean;
-    freeModelNotFound: boolean;
-  }> {
-    try {
-      const availableModels = await this.getAvailableModelsInfo();
-      const selectedModel = await this.getAvailableChatModel();
-
-      if (!selectedModel) {
-        return {
-          selectedModel: null,
-          availableModels,
-          isFreeModel: false,
-          freeModelNotFound: true
-        };
-      }
-
-      const selectedModelInfo = availableModels.find(m => m.id === selectedModel.id) || null;
-      return {
-        selectedModel: selectedModelInfo,
-        availableModels,
-        isFreeModel: selectedModelInfo?.isFree || false,
-        freeModelNotFound: false
-      };
-    } catch (err) {
-      this.debugLog([`ERROR: getSelectedModelInfo - ${err}`]);
-      return {
-        selectedModel: null,
-        availableModels: [],
-        isFreeModel: false,
-        freeModelNotFound: true
-      };
-    }
-  }
-
-  /**
-   * Clear the cached models. Useful when model availability may have changed.
-   */
-  clearCache(): void {
-    this.modelCache = null;
-  }
-
-  /**
-   * Find a free model with the highest max input tokens.
-   */
-  private async findFreeModel(): Promise<vscode.LanguageModelChat | undefined> {
-    const allModels = await this.getModels();
-    if (allModels.length === 0) {
-      return undefined;
-    }
-
-    const freeModels = allModels.filter(model => this.getPricingValue(model) === 0);
-    if (freeModels.length === 0) {
-      return undefined;
-    }
-
-    return freeModels.reduce((best, current) =>
-      this.getMaxInputTokens(current) > this.getMaxInputTokens(best) ? current : best
-    );
-  }
-
-  /**
-   * Fallback: return the cheapest model (or highest token count among same price).
-   */
-  private async getFallbackModel(): Promise<vscode.LanguageModelChat | undefined> {
-    const allModels = await this.getModels();
-    if (allModels.length === 0) {
-      return undefined;
-    }
-
-    const sorted = allModels.sort((a, b) => {
-      const valueA = this.getPricingValue(a);
-      const valueB = this.getPricingValue(b);
-      return valueA === valueB
-        ? this.getMaxInputTokens(b) - this.getMaxInputTokens(a)
-        : valueA - valueB;
+  async getModels(): Promise<ExtendedModel[]> {
+    const models = await vscode.lm.selectChatModels({});
+    
+    const parsedModels: ExtendedModel[] = models.map((model) => {
+      const price = this.getPricingValue(model);
+      const isFree = price === 0;
+      return { ...model, price, isFree };
     });
 
-    return sorted[0];
+    const sortedModels: ExtendedModel[] = parsedModels.sort((a, b) => {
+      if (a.price === b.price) {
+        return 0;
+      }
+      return a.price - b.price;
+    });
+ 
+    return sortedModels;
+  }
+
+  /**
+   * Get the model to use for queries: user's stored choice or the cheapest fallback.
+   */
+  async getSelectedModel(): Promise<vscode.LanguageModelChat> {
+    const allModels = await this.getModels();
+    if (!allModels.length) {
+      throw new Error("No chat models available");
+    }
+
+    if (this.selectedModelId) {
+      const match = allModels.find(m => m.id === this.selectedModelId);
+      if (match) return match;
+      this.logger.warn(`Previously selected model "${this.selectedModelId}" not found, falling back to cheapest`);
+    }
+
+    return allModels[0];
   }
 
   /**
@@ -163,16 +63,8 @@ export class ChatModelProvider {
    */
   private getPricingValue(model: vscode.LanguageModelChat): number {
     const metadata = model as { pricing?: string };
-    const pricing = metadata.pricing || '';
+    const pricing = metadata.pricing || "";
     const match = pricing.match(/^([\d.]+)x$/);
     return match ? parseFloat(match[1]) : Infinity;
-  }
-
-  /**
-   * Get the max input tokens for a model.
-   */
-  private getMaxInputTokens(model: vscode.LanguageModelChat): number {
-    const metadata = model as { maxInputTokens?: number };
-    return metadata.maxInputTokens || 0;
   }
 }

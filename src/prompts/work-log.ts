@@ -7,7 +7,6 @@ export function getWorkLogPrompt(today: string): string {
   return `You are an expert timesheet writer. I will provide a JSON array of work log items. Categorize them into a professional timesheet report. Date: ${today}.
 
 RULES:
-- Ignore any "tsDate" from the input — use the date above
 - Preserve original meaning — do NOT invent work (I am a software engineer)
 - Correct grammar and clarity; expand abbreviations ("1:1" → "one-on-one meeting")
 - Classify each item as: Meetings or Tasks

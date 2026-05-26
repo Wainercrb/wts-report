@@ -2,24 +2,49 @@ import React, { useState, useEffect } from 'react';
 import InteractorFactory from '../../Interaction/InteractorFactory';
 import { Badge } from '../atoms/Badge';
 
+const STORAGE_KEY = 'wts-report-selected-model';
+
+function restoreSavedModel(models) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      const match = models.find(m => m.id === saved.id);
+      if (match) return match;
+    }
+  } catch {
+    // Corrupted localStorage entry, ignore
+  }
+  return null;
+}
+
 export function ModelSelector() {
   const Interactor = InteractorFactory.create();
   
   const [selectedModel, setSelectedModel] = useState(null);
-  const [availableModels, setAvailableModels] = useState([]);
+  const [models, setModels] = useState([]);
   const [isFreeModel, setIsFreeModel] = useState(false);
-  const [freeModelNotFound, setFreeModelNotFound] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Request model info on mount
   useEffect(() => {
     setIsLoading(true);
     Interactor.requestModelInfo((modelInfo) => {
+      console.log('Received model info: 🍔🍔', modelInfo);
       if (modelInfo) {
-        setSelectedModel(modelInfo.selectedModel);
-        setAvailableModels(modelInfo.availableModels || []);
-        setIsFreeModel(modelInfo.isFreeModel);
-        setFreeModelNotFound(modelInfo.freeModelNotFound);
+        const list = modelInfo?.models || [];
+        setModels(list);
+
+        // Restore previous selection or default to first available
+        const saved = restoreSavedModel(list) || list[0] || null;
+        setSelectedModel(saved);
+        setIsFreeModel(saved ? saved.isFree : false);
+
+        // Sync the restored/default selection back to the extension
+        if (saved) {
+          Interactor.selectModel(saved.id);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+        }
       }
       setIsLoading(false);
     });
@@ -27,13 +52,13 @@ export function ModelSelector() {
 
   const handleModelChange = (e) => {
     const modelId = e.target.value;
-    const selected = availableModels.find(m => m.id === modelId);
+    const selected = models.find(m => m.id === modelId);
     if (selected) {
       setSelectedModel(selected);
-      // Update free model status
       setIsFreeModel(selected.isFree);
-      // Store selection in localStorage for future use
-      localStorage.setItem('wts-report-selected-model', JSON.stringify(selected));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(selected));
+      // Tell the extension which model the user chose
+      Interactor.selectModel(modelId);
     }
   };
 
@@ -59,20 +84,17 @@ export function ModelSelector() {
           LLM Model
         </label>
         <div className="flex gap-2">
-          {freeModelNotFound && availableModels.length > 0 && (
-            <Badge variant="error">✗ No Free Model</Badge>
-          )}
-          {!freeModelNotFound && isFreeModel && (
+          {isFreeModel && selectedModel && (
             <Badge variant="success">✓ Free (0x)</Badge>
           )}
-          {!freeModelNotFound && !isFreeModel && selectedModel && (
-            <Badge variant="warning">{selectedModel.pricing}</Badge>
+          {!isFreeModel && selectedModel && (
+            <Badge variant="warning">{selectedModel?.pricing}</Badge>
           )}
         </div>
       </div>
 
       {/* Model Dropdown */}
-      {availableModels.length > 0 ? (
+      {models.length > 0 ? (
         <div className="space-y-3">
           <select
             value={selectedModel?.id || ''}
@@ -80,7 +102,7 @@ export function ModelSelector() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium text-gray-900 bg-white"
           >
             <option value="">-- Select a model --</option>
-            {availableModels.map((model) => (
+            {models.map((model) => (
               <option key={model.id} value={model.id}>
                 {model.name} {model.pricing && `(${model.pricing})`}
               </option>
@@ -93,27 +115,27 @@ export function ModelSelector() {
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <p className="text-gray-600 font-medium">Vendor</p>
-                  <p className="text-gray-900 font-semibold">{selectedModel.vendor}</p>
+                  <p className="text-gray-900 font-semibold">{selectedModel?.vendor}</p>
                 </div>
                 <div>
                   <p className="text-gray-600 font-medium">Pricing</p>
-                  <p className={`font-semibold ${selectedModel.isFree ? 'text-green-700' : 'text-amber-700'}`}>
-                    {selectedModel.pricing} {selectedModel.isFree && '(Free)'}
+                  <p className={`font-semibold ${selectedModel?.isFree ? 'text-green-700' : 'text-amber-700'}`}>
+                    {selectedModel?.pricing} {selectedModel?.isFree && '(Free)'}
                   </p>
                 </div>
                 <div>
                   <p className="text-gray-600 font-medium">Context Window</p>
-                  <p className="text-gray-900 font-semibold">{selectedModel.maxTokens.toLocaleString()} tokens</p>
+                  <p className="text-gray-900 font-semibold">{selectedModel?.maxTokens?.toLocaleString()} tokens</p>
                 </div>
                 <div>
                   <p className="text-gray-600 font-medium">Tier</p>
-                  <p className={`font-semibold ${selectedModel.isFree ? 'text-green-700' : 'text-orange-700'}`}>
-                    {selectedModel.isFree ? 'Free' : 'Paid'}
+                  <p className={`font-semibold ${selectedModel?.isFree ? 'text-green-700' : 'text-orange-700'}`}>
+                    {selectedModel?.isFree ? 'Free' : 'Paid'}
                   </p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-gray-600 font-medium">Model ID</p>
-                  <p className="text-gray-900 font-mono text-xs truncate">{selectedModel.id}</p>
+                  <p className="text-gray-900 font-mono text-xs truncate">{selectedModel?.id}</p>
                 </div>
               </div>
             </div>

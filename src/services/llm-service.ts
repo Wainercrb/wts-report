@@ -1,9 +1,14 @@
-import * as vscode from 'vscode';
-import { ILLMService, GitChange, StoredItem } from '../types';
-import { getFormattedDate, formatGitChanges } from '../utils/formatting';
-import { getTimesheetPrompt, getWorkLogPrompt } from '../prompts';
-import { ChatModelProvider } from './chat-model-provider';
-import { tryCatch } from '../utils/errors';
+import * as vscode from "vscode";
+import {
+  ILLMService,
+  ILogger,
+  GitChange,
+  StoredItem,
+  ExtendedModel,
+} from "../types";
+import { getFormattedDate, formatGitChanges } from "../utils/formatting";
+import { getTimesheetPrompt, getWorkLogPrompt } from "../prompts";
+import { ChatModelProvider } from "./chat-model-provider";
 
 /**
  * Service for interacting with LLM (Language Model) APIs
@@ -11,128 +16,68 @@ import { tryCatch } from '../utils/errors';
  * via a callback to decouple from webview concerns.
  */
 export class LLMService implements ILLMService {
-  private static readonly NO_CHANGES_MSG = 'No git changes found for today';
-  private static readonly EMPTY_RESPONSE_MSG = '(empty response from LLM)';
-  private static readonly NO_MODEL_MSG = 'No suitable LLM model available. Please ensure VS Code has an LLM extension installed.';
+  private static readonly NO_CHANGES_MSG = "No git changes found for today";
+  private static readonly EMPTY_RESPONSE_MSG = "(empty response from LLM)";
+  private static readonly NO_MODEL_MSG =
+    "No suitable LLM model available. Please ensure VS Code has an LLM extension installed.";
 
   constructor(
     private chatModelProvider: ChatModelProvider,
-    private debugLog: (lines: string[]) => void = () => {},
-    private onResult?: (command: string, result: string) => void
+    private logger: ILogger,
   ) {}
-
   /**
-   * Format git changes as a timesheet, optionally using LLM for formatting.
+   * Format git changes as a timesheet via LLM (automatic / git-driven).
    */
-  async formatGitChangesAsTimesheet(
+  async runAutomaticSpreadsheetQuery(
     gitChanges: GitChange[],
-    storedItems?: StoredItem[]
+    storedItems?: StoredItem[],
   ): Promise<string> {
     if (gitChanges.length === 0) {
       return LLMService.NO_CHANGES_MSG;
     }
 
     const formattedChanges = formatGitChanges(gitChanges);
+    const today = getFormattedDate();
+    const prompt = getTimesheetPrompt(today);
 
-    const outcome = await tryCatch(
-      async (): Promise<string> => {
-        const today = getFormattedDate();
-        const prompt = getTimesheetPrompt(today);
-        const chatModel = await this.chatModelProvider.getAvailableChatModel();
+    const messages = [
+      vscode.LanguageModelChatMessage.User(prompt),
+      vscode.LanguageModelChatMessage.User(
+        `Git commits by ticket:\n${formattedChanges}`,
+      ),
+    ];
 
-        if (!chatModel) {
-          return formattedChanges;
-        }
-
-        const messages = [
-          vscode.LanguageModelChatMessage.User(prompt),
-          vscode.LanguageModelChatMessage.User(`Git commits by ticket:\n${formattedChanges}`)
-        ];
-
-        if (storedItems && storedItems.length > 0) {
-          const itemsText = storedItems
-            .map(i => `[${i.tsType}] ${i.tsText}`)
-            .join('\n');
-          messages.push(vscode.LanguageModelChatMessage.User(
-            `Below are manually entered work log items. Merge them into the appropriate sections of the timesheet:\n${itemsText}`
-          ));
-        }
-
-        const result = await this.executeQuery(messages);
-        this.debugLog([`formatGitChangesAsTimesheet: LLM completed successfully`]);
-        return result;
-      },
-      (lines: string[]) => this.debugLog(lines),
-      'formatting timesheet'
-    );
-
-    this.onResult?.('gitHistoryResult', outcome.ok ? outcome.value : `Error: ${outcome.error}`);
-    return outcome.ok ? outcome.value : 'Error formatting timesheet';
-  }
-
-  /**
-   * Run a user query through the LLM and stream the response.
-   */
-  async runQuery(
-    userQuery: string,
-    response?: { markdown?: (text: string) => void },
-    token?: vscode.CancellationToken
-  ): Promise<void> {
-    this.debugLog(['=== LLM checking (command) received query ===', userQuery]);
-
-    const outcome = await tryCatch(
-      async (): Promise<string> => {
-        const chatModel = await this.chatModelProvider.getAvailableChatModel();
-        if (!chatModel) {
-          throw new Error(LLMService.NO_MODEL_MSG);
-        }
-
-        const today = getFormattedDate();
-        const prompt = getWorkLogPrompt(today);
-        const messages = [
-          vscode.LanguageModelChatMessage.User(prompt),
-          vscode.LanguageModelChatMessage.User(`json array: ${userQuery}`),
-        ];
-
-        const result = await this.executeQuery(messages, token);
-        this.debugLog([result]);
-
-        if (response?.markdown) {
-          response.markdown(result);
-        }
-        return result;
-      },
-      (lines: string[]) => this.debugLog(lines),
-      'runQuery'
-    );
-
-    if (outcome.ok) {
-      this.onResult?.('llmResult', outcome.value);
-    } else {
-      this.debugLog([`ERROR: ${outcome.error}`]);
-      this.onResult?.('llmResult', `Error: ${outcome.error}`);
+    if (storedItems && storedItems.length > 0) {
+      const itemsText = storedItems
+        .map((i) => `[${i.tsType}] ${i.tsText}`)
+        .join("\n");
+      messages.push(
+        vscode.LanguageModelChatMessage.User(
+          `Below are manually entered work log items. Merge them into the appropriate sections of the timesheet:\n${itemsText}`,
+        ),
+      );
     }
+
+    return this.executeQuery(messages);
   }
 
   /**
-   * Delegate model info queries to ChatModelProvider.
+   * Run a manual work-log query through the LLM (manual / form-driven).
    */
-  async getAvailableModelsInfo(): Promise<
-    Array<{ id: string; name: string; pricing: string; isFree: boolean; vendor: string; maxTokens: number }>
-  > {
-    return this.chatModelProvider.getAvailableModelsInfo();
-  }
+  async runManualSpreadsheetQuery(userQuery: string): Promise<string> {
+    this.logger.info("=== Manual spreadsheet query received ===");
+    this.logger.debug(userQuery);
 
-  /**
-   * Delegate selected model info queries to ChatModelProvider.
-   */
-  async getSelectedModelInfo(): Promise<{
-    selectedModel: { id: string; name: string; pricing: string; isFree: boolean; vendor: string; maxTokens: number } | null;
-    availableModels: Array<{ id: string; name: string; pricing: string; isFree: boolean; vendor: string; maxTokens: number }>;
-    isFreeModel: boolean;
-    freeModelNotFound: boolean;
-  }> {
-    return this.chatModelProvider.getSelectedModelInfo();
+    const today = getFormattedDate();
+    const prompt = getWorkLogPrompt(today);
+    const messages = [
+      vscode.LanguageModelChatMessage.User(prompt),
+      vscode.LanguageModelChatMessage.User(`json array: ${userQuery}`),
+    ];
+
+    this.logger.debug(`prompt: ${prompt}`);
+
+    return this.executeQuery(messages);
   }
 
   /**
@@ -140,20 +85,35 @@ export class LLMService implements ILLMService {
    */
   private async executeQuery(
     messages: vscode.LanguageModelChatMessage[],
-    token?: vscode.CancellationToken
   ): Promise<string> {
-    const chatModel = await this.chatModelProvider.getAvailableChatModel();
-    if (!chatModel) {
-      throw new Error('No model available for query execution');
+    const model = await this.chatModelProvider.getSelectedModel();
+    if (!model) {
+      throw new Error("No model available for query execution");
     }
 
-    const chatRequest = await chatModel.sendRequest(messages, undefined, token);
-    let result = '';
-    
-    for await (const chunk of chatRequest.text) {
-      result += String(chunk);
+    this.logger.info(`Using model: ${model.name} (${model.id}) ${model.family})`);
+
+    const tokenSource = new vscode.CancellationTokenSource();
+    const responseStream = await model.sendRequest(
+      messages,
+      {},
+      tokenSource.token,
+    );
+    tokenSource.dispose();
+
+    const result = [];
+    for await (const fragment of responseStream.text) {
+      result.push(String(fragment));
     }
-    
-    return result || LLMService.EMPTY_RESPONSE_MSG;
+
+    return result.join("") || LLMService.EMPTY_RESPONSE_MSG;
+  }
+
+  async getModelList(): Promise<ExtendedModel[]> {
+    return this.chatModelProvider.getModels();
+  }
+
+  setSelectedModelId(modelId: string): void {
+    this.chatModelProvider.setSelectedModelId(modelId);
   }
 }
