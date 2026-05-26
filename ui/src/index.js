@@ -7,7 +7,7 @@ import InteractorFactory from './Interaction/InteractorFactory';
 import { ManualTab } from './components/templates/ManualTab';
 import { AutomaticTab } from './components/templates/AutomaticTab';
 import { ModelSelector } from './components/molecules/ModelSelector';
-import { COMMANDS } from "../../consts";
+import { COMMANDS } from "../../out/consts";
 
 console.log('Index.js loading...', React, ReactDOM);
 const Interactor = InteractorFactory.create();
@@ -329,7 +329,7 @@ function Index() {
       </nav>
 
       {/* Model Selector */}
-      <div className="px-4">
+      <div className="px-4 mb-4">
         <ModelSelector />
       </div>
 

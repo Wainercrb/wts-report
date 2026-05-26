@@ -1,5 +1,5 @@
 import Interactor from "./Interactor";
-import { COMMANDS, CONFIG } from '../../../consts';
+import { COMMANDS, CONFIG } from '../../../out/consts';
 
 const VsCodeStateChangeCallbacks = {
   onModelInfo: modelInfo => {}
@@ -14,7 +14,7 @@ window.addEventListener('message', event => {
   const message = event.data;
 
   switch(message.command){
-    case 'modelInfo':
+    case COMMANDS.GET_AVAILABLE_MODELS:
       VsCodeStateChangeBuffer.modelInfo = message.modelInfo;
       VsCodeStateChangeCallbacks.onModelInfo(message.modelInfo);
     break;

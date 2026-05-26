@@ -136,53 +136,54 @@ export function createMockLogger(
 }
 
 /**
- * Factory function to create a WebviewMessage with form values
+ * Factory function to create a WebviewMessage with form values (manual entry)
  * Used for testing form submission flow
  *
  * @param values Form data values
- * @returns WebviewMessage with formValues command
+ * @returns WebviewMessage with command 'manualTimesheetReport'
  *
  * @example
- * const msg = createFormValuesMessage({ project: 'wts-report', date: '2026-05-19' });
- * expect(msg.command).to.equal('formValues');
+ * const msg = createFormValuesMessage({ project: 'wts-report' });
+ * expect(msg.command).to.equal('manualTimesheetReport');
+ * expect(msg.values).to.deep.equal({ project: 'wts-report' });
  */
 export function createFormValuesMessage(
   values: Record<string, unknown>
 ): WebviewMessage {
   return {
-    command: 'formValues',
+    command: 'manualTimesheetReport',
     values,
   };
 }
 
 /**
- * Factory function to create a WebviewMessage with URLs for git history
- * Used for testing git history checking
+ * Factory function to create a WebviewMessage for auto (git) history check
+ * Used for testing git history feature from the UI
  *
  * @param urls Array of URL items with id and url
- * @returns WebviewMessage with checkGitHistory command
+ * @returns WebviewMessage with command 'automaticTimesheetReport'
  *
  * @example
  * const urls = [{ id: 'proj1', url: 'C:\\projects\\repo1' }];
  * const msg = createCheckGitHistoryMessage(urls);
- * expect(msg.command).to.equal('checkGitHistory');
+ * expect(msg.command).to.equal('automaticTimesheetReport');
  * expect(msg.urls).to.deep.equal([{ id: 'proj1', url: 'C:\\projects\\repo1' }]);
  */
 export function createCheckGitHistoryMessage(
   urls: UrlEntry[]
 ): WebviewMessage {
   return {
-    command: 'checkGitHistory',
+    command: 'automaticTimesheetReport',
     urls,
   };
 }
 
 /**
- * Factory function to create a show information message command
+ * Factory function to create an info alert message (show info)
  * Used for testing notification flow
  *
  * @param text Message text to display
- * @returns WebviewMessage with showInformationMessage command
+ * @returns WebviewMessage with command 'infoAlert'
  *
  * @example
  * const msg = createShowInfoMessage('Operation completed successfully');
@@ -190,7 +191,7 @@ export function createCheckGitHistoryMessage(
  */
 export function createShowInfoMessage(text: string): WebviewMessage {
   return {
-    command: 'showInformationMessage',
+    command: 'infoAlert',
     text,
   };
 }

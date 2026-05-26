@@ -1,4 +1,4 @@
-import { OUTPUT_CHANNEL_NAME } from "../../consts";
+import { OUTPUT_CHANNEL_NAME } from "../consts";
 import { ILogger } from "../types";
 import * as vscode from "vscode";
 
@@ -17,8 +17,6 @@ export class Logger implements ILogger {
     for (const line of lines) {
       this.outputChannel.appendLine(line);
     }
-    if (String(process.env.DEBUG).toLowerCase() === "true") {
-      this.outputChannel.show(true);
-    }
+    this.outputChannel.show(true);
   }
 }

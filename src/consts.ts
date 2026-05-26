@@ -10,8 +10,8 @@ export const COMMANDS = {
     MANUAL_TIMESHEET_REPORT: 'manualTimesheetReport',
     AUTOMATIC_TIMESHEET_REPORT: 'automaticTimesheetReport',
     GET_AVAILABLE_MODELS: 'getAvailableModels',
-};
+} as const;
 
 export const CONFIG = {
     INFO_ALERT: 'infoAlert'
-}
+} as const;
