@@ -6,18 +6,15 @@ const VsCodeStateChangeCallbacks = {
 }
 
 const VsCodeStateChangeBuffer = {
-  directoryInfo: "",
   modelInfo: null
 }
 
 window.addEventListener('message', event => {
   const message = event.data;
 
-  switch(message.command){
-    case COMMANDS.GET_AVAILABLE_MODELS:
-      VsCodeStateChangeBuffer.modelInfo = message.modelInfo;
-      VsCodeStateChangeCallbacks.onModelInfo(message.modelInfo);
-    break;
+  if (message.modelInfo) {
+    VsCodeStateChangeBuffer.modelInfo = message.modelInfo;
+    VsCodeStateChangeCallbacks.onModelInfo(message.modelInfo);
   }
 });
 
@@ -30,21 +27,27 @@ function createFromVsCodeApi(vscode) {
 
   Interactor.sendFormValues = values =>
     vscode.postMessage({
-      command: COMMANDS.MANUAL_TIMESHEET_REPORT,
-      values: values
+      command: COMMANDS.MANUAL_TIMESHEET,
+      values
     });
 
   Interactor.sendGitUrls = (urls, storedItems) =>
     vscode.postMessage({
-      command: COMMANDS.AUTOMATIC_TIMESHEET_REPORT,
-      urls: urls,
+      command: COMMANDS.AUTOMATIC_TIMESHEET,
+      urls,
       ...(storedItems && storedItems.length > 0 ? { storedItems } : {})
     });
 
   Interactor.requestModelInfo = callback => {
     VsCodeStateChangeCallbacks.onModelInfo = callback;
-    vscode.postMessage({ command: COMMANDS.GET_AVAILABLE_MODELS });
+    vscode.postMessage({ command: COMMANDS.GET_MODEL_INFO });
   }
+
+  Interactor.selectModel = modelId =>
+    vscode.postMessage({
+      command: COMMANDS.SELECT_MODEL,
+      modelId
+    });
 
   return Interactor;
 }

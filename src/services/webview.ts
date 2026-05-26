@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { IWebviewManager } from '../types';
-import { WEBVIEW_PANEL_ID, WEBVIEW_PANEL_TITLE, HTML_FILENAME, SCRIPT_FILENAME } from '../consts';
+import { WEBVIEW_PANEL_ID, WEBVIEW_PANEL_TITLE, HTML_FILENAME, SCRIPT_FILENAME } from '../config';
 
 /**
  * Manages webview panel creation, messaging, and lifecycle

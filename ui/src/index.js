@@ -7,7 +7,7 @@ import InteractorFactory from './Interaction/InteractorFactory';
 import { ManualTab } from './components/templates/ManualTab';
 import { AutomaticTab } from './components/templates/AutomaticTab';
 import { ModelSelector } from './components/molecules/ModelSelector';
-import { COMMANDS } from "../../out/consts";
+import { RESPONSE } from "../../out/consts";
 
 console.log('Index.js loading...', React, ReactDOM);
 const Interactor = InteractorFactory.create();
@@ -66,14 +66,14 @@ function Index() {
   useEffect(() => {
     function handleMessage(event) {
       const msg = event.data;
-      if (!msg || !msg.command) return;
+      if (!msg) return;
 
-      if (msg.command === COMMANDS.MANUAL_TIMESHEET_REPORT) {
-        setResult(msg.result || '');
+      if (msg[RESPONSE.LLM_RESULT]) {
+        setResult(msg[RESPONSE.LLM_RESULT]);
         setLoading(false);
       }
-      if (msg.command === COMMANDS.AUTOMATIC_TIMESHEET_REPORT) {
-        setGitResult(msg.result || '');
+      if (msg[RESPONSE.GIT_HISTORY_RESULT]) {
+        setGitResult(msg[RESPONSE.GIT_HISTORY_RESULT]);
         setLoading(false);
       }
     }

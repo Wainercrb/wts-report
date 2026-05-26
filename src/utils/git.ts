@@ -1,6 +1,6 @@
 import { executeCommand } from './command';
 import { GitChange, UrlEntry } from '../types';
-import { getDateRange } from './formatting';
+import { getFormattedDate, getDateRange } from './formatting';
 
 export async function getGitBranch(cwd: string): Promise<string> {
   if (!cwd) {

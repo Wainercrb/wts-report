@@ -1,17 +1,23 @@
-export const START_COMMAND_NAME = 'extension.startExtension';
-export const WEBVIEW_PANEL_ID = 'reactExtension';
-export const WEBVIEW_PANEL_TITLE = 'TWS Report';
-export const OUTPUT_CHANNEL_NAME = 'ReactForm';
-export const HTML_FILENAME = 'index.html';
-export const SCRIPT_FILENAME = 'main.js';
-
-
+// ===== Extension Commands (UI → Extension) =====
+// These are the command values the webview sends for message routing.
 export const COMMANDS = {
-    MANUAL_TIMESHEET_REPORT: 'manualTimesheetReport',
-    AUTOMATIC_TIMESHEET_REPORT: 'automaticTimesheetReport',
-    GET_AVAILABLE_MODELS: 'getAvailableModels',
+    SHOW_INFORMATION: 'showInformationMessage',
+    AUTOMATIC_TIMESHEET: 'automaticTimesheet',
+    MANUAL_TIMESHEET: 'manualTimesheet',
+    GET_MODEL_INFO: 'getModelInfo',
+    SELECT_MODEL: 'selectModel',
 } as const;
 
+// ===== Response Commands (Extension → UI) =====
+// These are the command keys the webview receiver uses to discriminate messages.
+export const RESPONSE = {
+    GIT_HISTORY_RESULT: 'gitHistoryResult',
+    LLM_RESULT: 'llmResult',
+    MODEL_INFO: 'modelInfo',
+} as const;
+
+// ===== UI Config =====
+// UI metadata and channel identifiers
 export const CONFIG = {
-    INFO_ALERT: 'infoAlert'
+    INFO_ALERT: 'infoAlert',
 } as const;

@@ -34,14 +34,3 @@ export async function executeCommand(
   });
 }
 
-/**
- * Execute a directory listing command
- * @returns Promise with directory listing output
- */
-export async function listDirectory(): Promise<string> {
-  const isWindows = process.platform === 'win32';
-  const cmd = isWindows ? (process.env.comspec || 'cmd.exe') : 'ls';
-  const args = isWindows ? ['/c', 'dir'] : ['-la'];
-  
-  return executeCommand(cmd, args);
-}

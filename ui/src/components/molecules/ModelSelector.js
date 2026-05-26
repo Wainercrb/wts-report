@@ -5,21 +5,48 @@ import { Badge } from '../atoms/Badge';
 export function ModelSelector() {
   const Interactor = InteractorFactory.create();
   
-  const [selectedModel, setSelectedModel] = useState(null);
+  // Try to restore previous selection from localStorage
+  const savedModel = React.useMemo(() => {
+    try {
+      const saved = localStorage.getItem('wts-report-selected-model');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  }, []);
+
+  const [selectedModel, setSelectedModel] = useState(savedModel);
   const [availableModels, setAvailableModels] = useState([]);
-  const [isFreeModel, setIsFreeModel] = useState(false);
-  const [freeModelNotFound, setFreeModelNotFound] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  const isFreeModel = selectedModel?.isFree ?? false;
 
   // Request model info on mount
   useEffect(() => {
     setIsLoading(true);
     Interactor.requestModelInfo((modelInfo) => {
-      if (modelInfo) {
-        setSelectedModel(modelInfo.selectedModel);
-        setAvailableModels(modelInfo.availableModels || []);
-        setIsFreeModel(modelInfo.isFreeModel);
-        setFreeModelNotFound(modelInfo.freeModelNotFound);
+      if (modelInfo?.models) {
+        const models = modelInfo.models;
+        setAvailableModels(models);
+
+        // If previously saved model is still in the list, keep it selected
+        if (selectedModel) {
+          const stillExists = models.find(m => m.id === selectedModel.id);
+          if (stillExists) {
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // Otherwise auto-select first free model, or first model
+        const free = models.find(m => m.isFree);
+        if (free) {
+          setSelectedModel(free);
+          localStorage.setItem('wts-report-selected-model', JSON.stringify(free));
+          Interactor.selectModel(free.id);
+        } else if (models.length > 0) {
+          setSelectedModel(models[0]);
+          localStorage.setItem('wts-report-selected-model', JSON.stringify(models[0]));
+          Interactor.selectModel(models[0].id);
+        }
       }
       setIsLoading(false);
     });
@@ -30,10 +57,8 @@ export function ModelSelector() {
     const selected = availableModels.find(m => m.id === modelId);
     if (selected) {
       setSelectedModel(selected);
-      // Update free model status
-      setIsFreeModel(selected.isFree);
-      // Store selection in localStorage for future use
       localStorage.setItem('wts-report-selected-model', JSON.stringify(selected));
+      Interactor.selectModel(selected.id);
     }
   };
 
@@ -45,12 +70,6 @@ export function ModelSelector() {
     );
   }
 
-  // Extract pricing multiplier value for display
-  const extractPricingValue = (pricing) => {
-    const match = pricing.match(/^([\d.]+)x$/);
-    return match ? match[1] : '?';
-  };
-
   return (
     <div className="bg-white p-4 rounded-lg border mb-4">
       {/* Header with Title and Status Badge */}
@@ -59,13 +78,9 @@ export function ModelSelector() {
           LLM Model
         </label>
         <div className="flex gap-2">
-          {freeModelNotFound && availableModels.length > 0 && (
-            <Badge variant="error">✗ No Free Model</Badge>
-          )}
-          {!freeModelNotFound && isFreeModel && (
+          {isFreeModel ? (
             <Badge variant="success">✓ Free (0x)</Badge>
-          )}
-          {!freeModelNotFound && !isFreeModel && selectedModel && (
+          ) : selectedModel && (
             <Badge variant="warning">{selectedModel.pricing}</Badge>
           )}
         </div>
@@ -79,10 +94,10 @@ export function ModelSelector() {
             onChange={handleModelChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium text-gray-900 bg-white"
           >
-            <option value="">-- Select a model --</option>
+              <option value="">-- Select a model --</option>
             {availableModels.map((model) => (
               <option key={model.id} value={model.id}>
-                {model.name} {model.pricing && `(${model.pricing})`}
+                {model.name}{model.pricing ? ` (${model.pricing})` : ''}
               </option>
             ))}
           </select>
@@ -93,17 +108,17 @@ export function ModelSelector() {
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <p className="text-gray-600 font-medium">Vendor</p>
-                  <p className="text-gray-900 font-semibold">{selectedModel.vendor}</p>
+                  <p className="text-gray-900 font-semibold">{selectedModel.vendor ?? '—'}</p>
                 </div>
                 <div>
                   <p className="text-gray-600 font-medium">Pricing</p>
                   <p className={`font-semibold ${selectedModel.isFree ? 'text-green-700' : 'text-amber-700'}`}>
-                    {selectedModel.pricing} {selectedModel.isFree && '(Free)'}
+                    {selectedModel.pricing ?? '—'} {selectedModel.isFree && '(Free)'}
                   </p>
                 </div>
                 <div>
                   <p className="text-gray-600 font-medium">Context Window</p>
-                  <p className="text-gray-900 font-semibold">{selectedModel.maxTokens.toLocaleString()} tokens</p>
+                  <p className="text-gray-900 font-semibold">{(selectedModel.maxInputTokens ?? 0).toLocaleString()} tokens</p>
                 </div>
                 <div>
                   <p className="text-gray-600 font-medium">Tier</p>
