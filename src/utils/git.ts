@@ -7,19 +7,22 @@ export async function getGitBranch(cwd: string): Promise<string> {
     throw new Error('Repository path is required');
   }
 
-  const result = await executeCommand('git', ['rev-parse', '--abbrev-ref', 'HEAD'], cwd);
-  return result.trim();
+  const commandResult = await executeCommand('git', ['rev-parse', '--abbrev-ref', 'HEAD'], cwd);
+  return commandResult.trim();
 }
 
-export async function getGitLogForToday(cwd: string): Promise<string> {
+export async function getGitLogForToday(cwd: string): Promise<string[]> {
   if (!cwd) {
     throw new Error('Repository path is required');
   }
 
   const { since, until } = getDateRange();
   const args = ['log', '--oneline', `--since=${since}`, `--until=${until}`];
-
-  return executeCommand('git', args, cwd);
+  const commandResult = await executeCommand('git', args, cwd);
+  return commandResult
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
 }
 
 export function extractProjectName(path: string): string {
@@ -43,18 +46,17 @@ export async function getGitHistoryForUrls(
 
     try {
       const branch = await getGitBranch(trimmed);
-      const changes = await getGitLogForToday(trimmed);
+      const gitLog = await getGitLogForToday(trimmed);
 
-      if (changes.trim().length > 0) {
+      if (gitLog.length > 0) {
         results.push({
           branch,
-          changes,
+          changes: gitLog.join('\n'),
           project: extractProjectName(trimmed)
         });
       }
     } catch {
       // Skip URLs with git errors, continue processing others
-      continue;
     }
   }
 

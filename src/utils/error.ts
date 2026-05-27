@@ -1,0 +1,15 @@
+export function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) {
+    return err.message;
+  }
+
+  if (typeof err === 'string') {
+    return err;
+  }
+
+  try {
+    return String(err);
+  } catch {
+    return 'Unknown error';
+  }
+}

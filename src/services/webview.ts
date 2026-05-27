@@ -2,7 +2,9 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { IWebviewManager } from '../types';
-import { WEBVIEW_PANEL_ID, WEBVIEW_PANEL_TITLE, HTML_FILENAME, SCRIPT_FILENAME } from '../config';
+import { WEBVIEW_PANEL_ID, WEBVIEW_PANEL_TITLE, HTML_FILENAME, SCRIPT_FILENAME } from '../constants/config';
+import { MESSAGES } from '../constants/messages';
+import { getErrorMessage } from '../utils/error';
 
 /**
  * Manages webview panel creation, messaging, and lifecycle
@@ -61,7 +63,7 @@ export class WebviewManager implements IWebviewManager {
 
       return html.replace(/src=("|')main\.js\1/g, `src="${scriptUri.toString()}"`);
     } catch (error) {
-      return `Error loading HTML: ${error}`;
+      return `${MESSAGES.ERROR.ERROR_LOADING_HTML}${getErrorMessage(error)}`;
     }
   }
 

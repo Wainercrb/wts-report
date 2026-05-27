@@ -1,10 +1,4 @@
-/**
- * Generate the LLM prompt for formatting git commits as professional timesheet entries
- * @param today - Formatted date string to inject into the prompt
- * @returns The complete prompt template
- */
-export function getTimesheetPrompt(today: string): string {
-  return `You are an expert technical timesheet writer. Date: ${today}.
+const TIMESHEET_TEMPLATE = `You are an expert technical timesheet writer. Date: {{today}}.
 
 You receive git commits grouped by ticket/project and optional work log items prefixed with [meeting] or [tasks].
 
@@ -17,7 +11,7 @@ I have attended the following meetings:
 - Attended daily standup: Synced on progress and blockers.
 
 I have completed the following tasks:
-${today}:
+{{today}}:
 
 [TICKET-456][ms-api] Implemented JWT authentication middleware in Express with token refresh, httpOnly cookie storage, and rate-limited auth endpoints. Extracted token validation into reusable service. Added request logging with correlation IDs on auth failures.
 
@@ -29,8 +23,16 @@ FORMATTING RULES FOR MEETINGS (items prefixed [meeting]):
 
 FORMATTING RULES FOR TASKS (git commits + [tasks] items):
 - Only include if git commits or [tasks] items exist. Otherwise omit this section entirely.
-- Header: "I have completed the following tasks:\n${today}:"
+- Header: "I have completed the following tasks:\n{{today}}:"
 - Each [TICKET-XXX][ProjectName] = ONE entry. Synthesize all commits under it.
 - BE THOROUGH AND TECHNICAL: include WHAT changed, WHY it mattered, and HOW (components, files, APIs, services, patterns).
 - Past tense, active verbs (implemented, fixed, refactored, optimized, added).`;
+
+/**
+ * Generate the LLM prompt for formatting git commits as professional timesheet entries
+ * @param today - Formatted date string to inject into the prompt
+ * @returns The complete prompt template
+ */
+export function getTimesheetPrompt(today: string): string {
+  return TIMESHEET_TEMPLATE.replace(/\{\{today\}\}/g, today);
 }

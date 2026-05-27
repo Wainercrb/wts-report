@@ -30,7 +30,9 @@ export async function executeCommand(
       }
     });
 
-    cp.on('error', reject);
+    cp.on('error', (spawnError: Error) => {
+      reject(spawnError);
+    });
   });
 }
 

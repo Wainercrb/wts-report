@@ -51,7 +51,9 @@ export class ChatModelProvider {
 
     if (this.selectedModelId) {
       const match = allModels.find(m => m.id === this.selectedModelId);
-      if (match) return match;
+      if (match) {
+        return match;
+      }
       this.logger.warn(`Previously selected model "${this.selectedModelId}" not found, falling back to cheapest`);
     }
 
