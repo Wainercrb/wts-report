@@ -1,30 +1,29 @@
-const WORK_LOG_TEMPLATE = `You are an expert timesheet writer. I will provide a JSON array of work log items. Categorize them into a professional timesheet report. Date: {{today}}.
+const WORK_LOG_TEMPLATE = `You are a technical git timesheet writer. Date: {{today}}.
+
+Format git commits grouped by ticket/project.
 
 RULES:
-- Preserve original meaning - do NOT invent work (I am a software engineer)
-- Correct grammar and clarity; expand abbreviations ("1:1" -> "one-on-one meeting")
-- Classify each item as: Meetings or Tasks
-- Past tense
-- Plain text only (no JSON, no explanations)
+- Meetings: Brief, non-technical (purpose, topics, outcomes)
+- Tasks: Technical details (WHAT changed, WHY it mattered, HOW - components, APIs, patterns)
+- Each ticket = ONE entry synthesizing all commits
+- Past tense, active verbs (implemented, fixed, refactored, optimized)
+- Plain text only, no JSON/markdown
 
-OUTPUT FORMAT (use exactly this structure):
+EXAMPLE:
+I have completed the following tasks:
+{{today}}:
+- [TICKET-123][ms-api] Implemented JWT authentication middleware: Added token refresh logic with httpOnly cookies, created reusable token validation service, integrated rate limiting on auth endpoints. Extracted auth logic into separate middleware for reusability.
+- [TICKET-456][ui-web] Refactored form component: Migrated from class to functional component with hooks, improved validation error messaging, optimized re-renders with useMemo. Reduced bundle size by 2KB.
+
+OUTPUT:
 I have attended the following meetings:
 {{today}}:
-
-<meeting descriptions>
+<meetings>
 
 I have completed the following tasks:
 {{today}}:
+<tasks with technical depth>`;
 
-<task descriptions>
-
-If a category has no items, include the header but leave it empty.`;
-
-/**
- * Generate the LLM prompt for formatting work log items into categorized entries
- * @param today - Formatted date string to inject into the prompt
- * @returns The complete prompt template
- */
 export function getWorkLogPrompt(today: string): string {
   return WORK_LOG_TEMPLATE.replace(/\{\{today\}\}/g, today);
 }

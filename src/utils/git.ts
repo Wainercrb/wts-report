@@ -11,13 +11,23 @@ export async function getGitBranch(cwd: string): Promise<string> {
   return commandResult.trim();
 }
 
+export async function getCurrentGitUser(cwd: string): Promise<string> {
+  if (!cwd) {
+    throw new Error('Repository path is required');
+  }
+
+  const commandResult = await executeCommand('git', ['config', 'user.email'], cwd);
+  return commandResult.trim();
+}
+
 export async function getGitLogForToday(cwd: string): Promise<string[]> {
   if (!cwd) {
     throw new Error('Repository path is required');
   }
 
+  const authorEmail = await getCurrentGitUser(cwd);
   const { since, until } = getDateRange();
-  const args = ['log', '--oneline', `--since=${since}`, `--until=${until}`];
+  const args = ['log', '--oneline', `--since=${since}`, `--until=${until}`, `--author=${authorEmail}`];
   const commandResult = await executeCommand('git', args, cwd);
   return commandResult
     .split(/\r?\n/)

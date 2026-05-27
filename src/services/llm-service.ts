@@ -36,7 +36,7 @@ export class LLMService implements ILLMService {
     try {
       const formattedChanges = formatGitChanges(gitChanges);
       const today = getFormattedDate();
-      const prompt = getTimesheetPrompt(today);
+      const prompt = getWorkLogPrompt(today);
 
       const messages = [
         vscode.LanguageModelChatMessage.User(prompt),
@@ -73,7 +73,7 @@ export class LLMService implements ILLMService {
       this.logger.debug(`Manual payload length: ${userQuery.length}`);
 
       const today = getFormattedDate();
-      const prompt = getWorkLogPrompt(today);
+      const prompt = getTimesheetPrompt(today);
       const messages = [
         vscode.LanguageModelChatMessage.User(prompt),
         vscode.LanguageModelChatMessage.User(`json array: ${userQuery}`),
