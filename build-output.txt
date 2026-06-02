@@ -1,6 +1,0 @@
-
-> wts-report@0.0.3 compile
-> tsc -p ./ && copy ui\dist\index.html out\index.html && copy ui\dist\main.js out\main.js
-
-        1 file(s) copied.
-        1 file(s) copied.
