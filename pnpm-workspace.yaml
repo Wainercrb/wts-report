@@ -1,10 +1,11 @@
+packages:
+  - '.'
+  - 'ui'
+
 allowBuilds:
   '@vscode/vsce-sign': true
   keytar: true
-# These override settings replace the old "overrides" field in package.json
-# which is not supported by pnpm v11.
+
 overrides:
-  # GHSA-5c6j-r48x-rmvq + GHSA-qj8w-gfj5-8c6v: mocha/ serialize-javascript
   "mocha>serialize-javascript": ">=7.0.5"
-  # GHSA-73rr-hh4g-fpgx: mocha>diff DoS in parsePatch/applyPatch
   "mocha>diff": ">=8.0.3"
