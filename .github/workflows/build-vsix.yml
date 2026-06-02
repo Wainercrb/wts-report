@@ -30,11 +30,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Build UI
-        run: cd ui && pnpm run build && cd ..
-
-      - name: Compile extension
-        run: pnpm run compile
+      - name: Build UI and Compile extension
+        run: pnpm run build:all
 
       - name: Package VSIX
         run: pnpm vsce package
