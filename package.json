@@ -34,10 +34,11 @@
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile",
+    "setup": "pnpm install && pnpm run build:all",
     "compile:ts": "tsc -p ./",
-    "compile:copy": "cp ui/dist/index.html out/index.html && cp ui/dist/main.js out/main.js",
-    "ui:build": "cd ui && pnpm install && pnpm run build && cd ..",
-    "build:all": "pnpm run compile:ts && pnpm run ui:build && pnpm run compile:copy",
+    "compile:ui": "pnpm --filter ui run build",
+    "compile:copy": "node -e \"const fs = require('fs'); fs.copyFileSync('ui/dist/index.html', 'out/index.html'); fs.copyFileSync('ui/dist/main.js', 'out/main.js');\"",
+    "build:all": "pnpm run compile:ts && pnpm run compile:ui && pnpm run compile:copy",
     "compile": "pnpm run build:all",
     "pretest": "pnpm run compile",
     "test": "node ./out/test/runTest.js"
