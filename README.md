@@ -25,18 +25,16 @@ Watch a quick demo of WTS Report in action:
 
 ### Installation
 
-1. Clone this repository:
+1. **Download the VSIX file** from the [GitHub Releases](https://github.com/Wainercrb/wts-report/releases) page:
+   - Go to [Releases](https://github.com/Wainercrb/wts-report/releases)
+   - Download the latest `wts-report-X.X.X.vsix` file
+
+2. Install the extension:
    ```powershell
-   git clone <repo-url>
-   cd wts-report
+   code --install-extension wts-report-X.X.X.vsix
    ```
 
-2. Locate the VSIX file: `wts-report-0.0.9.vsix`
-
-3. Right-click the file and select **"Install Extension"** (or use the command below):
-   ```powershell
-   code --install-extension wts-report-0.0.9.vsix
-   ```
+   Or right-click the `.vsix` file and select **"Install Extension"**:
 
    ![Install Extension VSIX](./assets/install-extension.png)
 
