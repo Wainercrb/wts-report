@@ -48,7 +48,6 @@ jobs:
         with:
           tag_name: v${{ env.VERSION }}
           files: wts-report-*.vsix
-          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
