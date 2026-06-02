@@ -4,6 +4,7 @@
   "description": "AI-powered timesheet reporting extension. Automatically detect git changes and generate timesheet reports with AI summaries.",
   "version": "0.0.8",
   "engines": {
+    "node": ">=20",
     "vscode": "^1.110.0"
   },
   "categories": [

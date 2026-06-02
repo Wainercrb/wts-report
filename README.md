@@ -55,7 +55,7 @@ Watch a quick demo of WTS Report in action:
 
 ### Prerequisites
 
-- **Node.js** >= 18
+- **Node.js** >= 20
 - **pnpm** >= 9 ([install](https://pnpm.io/installation))
 
 ```powershell
