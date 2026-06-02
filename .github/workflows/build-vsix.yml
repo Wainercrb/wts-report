@@ -16,6 +16,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Clean node_modules and cache
+        run: rm -rf node_modules ui/node_modules
+
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
@@ -28,12 +31,17 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --force --no-frozen-lockfile
 
       - name: Build UI and Compile extension
         run: pnpm run build:all
 
+      - name: Prune dev dependencies
+        run: pnpm prune --prod
+
       - name: Package VSIX
+        env:
+          NODE_ENV: production
         run: pnpm vsce package
 
       - name: Upload VSIX artifact
