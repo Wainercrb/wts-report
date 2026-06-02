@@ -6,6 +6,10 @@ allowBuilds:
   '@vscode/vsce-sign': true
   keytar: true
 
+minimumReleaseAgeExclude:
+  - uuid@11.1.1
+
 overrides:
   "mocha>serialize-javascript": ">=7.0.5"
   "mocha>diff": ">=8.0.3"
+  uuid@<11.1.1: ^11.1.1
