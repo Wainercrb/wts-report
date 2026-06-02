@@ -30,9 +30,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Install UI dependencies
-        run: cd ui && pnpm install --no-frozen-lockfile && cd ..
-
       - name: Build UI
         run: cd ui && pnpm run build && cd ..
 
