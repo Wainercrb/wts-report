@@ -3,6 +3,12 @@
   "displayName": "wts-report",
   "description": "AI-powered timesheet reporting extension. Automatically detect git changes and generate timesheet reports with AI summaries.",
   "version": "0.0.8",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Wainercrb/wts-report.git"
+  },
+  "homepage": "https://github.com/Wainercrb/wts-report",
+  "license": "MIT",
   "engines": {
     "node": ">=20",
     "vscode": "^1.110.0"
