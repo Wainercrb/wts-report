@@ -37,7 +37,7 @@ jobs:
         run: pnpm run build:all
 
       - name: Package VSIX
-        run: pnpm vsce package
+        run: pnpm vsce package --allow-missing-repository
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
