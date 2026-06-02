@@ -36,7 +36,7 @@
     "vscode:prepublish": "pnpm run compile",
     "compile:ts": "tsc -p ./",
     "compile:copy": "cp ui/dist/index.html out/index.html && cp ui/dist/main.js out/main.js",
-    "ui:build": "cd ui && pnpm install --no-frozen-lockfile && pnpm run build && cd ..",
+    "ui:build": "cd ui && pnpm install && pnpm run build && cd ..",
     "build:all": "pnpm run compile:ts && pnpm run ui:build && pnpm run compile:copy",
     "compile": "pnpm run build:all",
     "pretest": "pnpm run compile",

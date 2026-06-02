@@ -31,13 +31,13 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --force --no-frozen-lockfile
+        run: pnpm install
 
       - name: Build UI and Compile extension
         run: pnpm run build:all
 
       - name: Package VSIX
-        run: pnpm vsce package --allow-missing-repository
+        run: pnpm exec vsce package --allow-missing-repository
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
