@@ -34,7 +34,7 @@
   "scripts": {
     "vscode:prepublish": "pnpm run compile",
     "ui:build": "cd ui && pnpm install --no-frozen-lockfile && pnpm run build && cd ..",
-    "build:all": "pnpm run compile && pnpm run ui:build",
+    "build:all": "pnpm run ui:build && pnpm run compile",
     "compile:wd": "tsc -p ./ && copy ui\\dist\\index.html out\\index.html && copy ui\\dist\\main.js out\\main.js",
     "compile": "tsc -p ./ && cp ui/dist/index.html out/index.html && cp ui/dist/main.js out/main.js",
     "pretest": "pnpm run compile",
