@@ -21,10 +21,6 @@ Watch a quick demo of WTS Report in action:
 
 [Video](https://github.com/user-attachments/assets/6de11c36-8c51-4457-a268-187618d69433)
 
-[📹 Download video](https://raw.githubusercontent.com/Wainercrb/wts-report/main/assets/ts-report.mp4)
-
-https://github.com/user-attachments/assets/6de11c36-8c51-4457-a268-187618d69433
-
 ---
 
 ## 👤 Using WTS Report (End Users)
