@@ -14,7 +14,10 @@ WTS Report is a VS Code extension that automatically detects your git changes an
 
 Watch a quick demo of WTS Report in action:
 
-<video src="https://raw.githubusercontent.com/Wainercrb/wts-report/main/assets/ts-report.mp4" width="100%" height="600" controls></video>
+<video width="640" height="360" controls>
+  <source src="https://raw.githubusercontent.com/Wainercrb/wts-report/main/assets/ts-report.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 [📹 Download video](https://raw.githubusercontent.com/Wainercrb/wts-report/main/assets/ts-report.mp4)
 
